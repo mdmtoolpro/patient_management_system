@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Lab Request - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Assign Lab Technician
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Request Information -->
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">Lab Request Details</h5>
+                    <hr>
+                    <p><strong>Request ID:</strong> {{ lab_request.request_id }}</p>
+                    <p><strong>Patient:</strong> {{ lab_request.visit.patient }}</p>
+                    <p><strong>Test Type:</strong> {{ lab_request.test_type.name }}</p>
+                    <p><strong>Turnaround Time:</strong> {{ lab_request.test_type.turnaround_time }} hours</p>
+                    <p><strong>Status:</strong> <span class="badge bg-success">Payment Completed</span></p>
+                </div>
+
+                <!-- Assignment Form -->
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="technician" class="form-label"><strong>Select Lab Technician</strong></label>
+                        <select class="form-select" id="technician" name="technician" required>
+                            <option value="">-- Select Technician --</option>
+                            {% for tech in lab_techs %}
+                            <option value="{{ tech.id }}">
+                                {{ tech.get_full_name }} 
+                                {% if tech.specialization %}
+                                - {{ tech.specialization }}
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Choose a lab technician to perform this test
+                        </div>
+                    </div>
+
+                    {% if lab_techs %}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-check me-2"></i>
+                            Assign to Technician
+                        </button>
+                        <a href="{% url 'lab_requests_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No active lab technicians available. Please contact administrator.
+                    </div>
+                    <a href="{% url 'lab_requests_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back to List
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

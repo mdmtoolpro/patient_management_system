@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Visit {{ visit.visit_id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Visit Information -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Visit Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Visit ID:</th>
+                        <td><strong>{{ visit.visit_id }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Patient:</th>
+                        <td>{{ visit.patient }}</td>
+                    </tr>
+                    <tr>
+                        <th>Doctor:</th>
+                        <td>{{ visit.assigned_doctor.get_full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            <span class="badge 
+                                {% if visit.status == 'COMPLETED' %}bg-success
+                                {% elif visit.status == 'WITH_DOCTOR' %}bg-primary
+                                {% elif visit.status == 'LAB_REQUESTED' %}bg-warning
+                                {% else %}bg-secondary{% endif %}">
+                                {{ visit.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Registration:</th>
+                        <td>{{ visit.registration_time|date:"M d, Y H:i" }}</td>
+                    </tr>
+                </table>
+                
+                {% if visit.symptoms %}
+                <div class="alert alert-warning mt-3">
+                    <strong>Symptoms:</strong> {{ visit.symptoms }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if user.role == 'DOCTOR' and visit.status == 'WITH_DOCTOR' %}
+                    <a href="{% url 'request_lab_test' visit.visit_id %}" class="btn btn-outline-info">
+                        <i class="fas fa-flask me-1"></i> Request Lab Test
+                    </a>
+                    {% endif %}
+                    
+                    {% if visit.lab_requests.exists %}
+                    <a href="#" class="btn btn-outline-success">
+                        <i class="fas fa-vial me-1"></i> View Lab Results
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Medical Examination -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Medical Examination</h5>
+                {% if user.role == 'DOCTOR' %}
+                <span class="badge bg-primary">Doctor View</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if user.role == 'DOCTOR' %}
+                <form method="post">
+                    {% csrf_token %}
+                    {{ exam_form|crispy }}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i> Save Examination
+                    </button>
+                </form>
+                {% else %}
+                <!-- Read-only view for non-doctors -->
+                <table class="table table-striped">
+                    <tr>
+                        <th>Blood Pressure</th>
+                        <td>{{ examination.blood_pressure|default:"Not recorded" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Temperature</th>
+                        <td>{{ examination.temperature|default:"Not recorded" }}°C</td>
+                    </tr>
+                    <tr>
+                        <th>Heart Rate</th>
+                        <td>{{ examination.heart_rate|default:"Not recorded" }} bpm</td>
+                    </tr>
+                    <tr>
+                        <th>Weight</th>
+                        <td>{{ examination.weight|default:"Not recorded" }} kg</td>
+                    </tr>
+                    <tr>
+                        <th>Height</th>
+                        <td>{{ examination.height|default:"Not recorded" }} cm</td>
+                    </tr>
+                </table>
+                
+                {% if examination.examination_notes %}
+                <div class="alert alert-info">
+                    <strong>Examination Notes:</strong><br>
+                    {{ examination.examination_notes }}
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Lab Tests -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Laboratory Tests</h5>
+            </div>
+            <div class="card-body">
+                {% if lab_requests %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Test ID</th>
+                                <th>Test Type</th>
+                                <th>Status</th>
+                                <th>Requested</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lab_request in lab_requests %}
+                            <tr>
+                                <td>{{ lab_request.request_id }}</td>
+                                <td>{{ lab_request.test_type.name }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if lab_request.status == 'COMPLETED' %}bg-success
+                                        {% elif lab_request.status == 'IN_PROGRESS' %}bg-info
+                                        {% elif lab_request.status == 'PAYMENT_PENDING' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ lab_request.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ lab_request.requested_at|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if lab_request.status == 'PAYMENT_PENDING' and user.role == 'CASHIER' %}
+                                    <a href="{% url 'process_lab_payment' lab_request.request_id %}" 
+                                       class="btn btn-sm btn-success">
+                                        Process Payment
+                                    </a>
+                                    {% endif %}
+
+                                    {% if lab_request.status == 'COMPLETED' and user.role == 'DOCTOR' %}
+                                    <a href="{% url 'lab_result_detail' lab_request.request_id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        View Result
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-flask fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">No Lab Tests</h6>
+                    <p class="text-muted">No laboratory tests have been requested for this visit.</p>
+                    {% if user.role == 'DOCTOR' %}
+                    <a href="{% url 'request_lab_test' visit.visit_id %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Request Lab Test
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

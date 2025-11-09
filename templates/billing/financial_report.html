@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial Report - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Financial Report</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Revenue</h5>
+                        <h2 class="card-text">${{ total_revenue }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-dollar-sign fa-3x"></i>
+                    </div>
+                </div>
+                <p class="card-text">Last 30 Days</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Report Period</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>From:</strong> {{ start_date|date:"M d, Y" }}</p>
+        <p><strong>To:</strong> {{ end_date|date:"M d, Y" }}</p>
+        <p class="text-muted">This report shows financial data for the selected period.</p>
+    </div>
+</div>
+{% endblock %}

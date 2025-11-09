@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Pharmacy - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Pharmacy Inventory</h1>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Medicines</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Medicine Name</th>
+                        <th>Generic Name</th>
+                        <th>Category</th>
+                        <th>Strength</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for medicine in medications %}
+                    <tr>
+                        <td><strong>{{ medicine.name }}</strong></td>
+                        <td>{{ medicine.generic_name|default:"-" }}</td>
+                        <td>{{ medicine.category|default:"-" }}</td>
+                        <td>{{ medicine.strength|default:"-" }}</td>
+                        <td>${{ medicine.price }}</td>
+                        <td>
+                            <span class="badge bg-{% if medicine.is_low_stock %}danger{% else %}success{% endif %}">
+                                {{ medicine.stock_quantity }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if medicine.is_active %}
+                            <span class="badge bg-info">Not Expired</span>
+                            {% else %}
+                            <span class="badge bg-warning">medicine Expired</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No medicines found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,161 @@
+<!-- Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+    <div class="position-sticky pt-3">
+        <!-- User Info Section -->
+        {% if user.is_authenticated %}
+        <div class="text-center p-3 border-bottom">
+            <div class="user-avatar mx-auto mb-2" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                {{ user.first_name|first }}{{ user.last_name|first }}
+            </div>
+            <h6 class="mb-1">{{ user.get_full_name }}</h6>
+            <small class="text-muted">{{ user.get_role_display }}</small>
+        </div>
+        {% endif %}
+        
+        <!-- Main Navigation -->
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                   href="{% url 'dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </li>
+            
+            <!-- Patient Management -->
+            <li class="nav-item mt-3">
+                <small class="text-uppercase text-muted px-3">Patient Management</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'patient' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'patient_list' %}">
+                    <i class="fas fa-user-injured"></i>
+                    Patients
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'visit' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="#">
+                    <i class="fas fa-calendar-check"></i>
+                    Appointments
+                </a>
+            </li>
+            
+            <!-- Laboratory -->
+               <li class="nav-item mt-3">
+                <small class="text-uppercase text-muted px-3">Laboratory</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'lab' in request.resolver_match.url_name or request.resolver_match.app_name == 'laboratory' %}active{% endif %}" 
+                   href="{% url 'lab_requests_list' %}">
+                    <i class="fas fa-flask"></i>
+                    Lab Tests
+                    {% if user.role in 'CASHIER,RECEPTIONIST,ADMIN' and pending_lab_payments > 0 %}
+                    <span class="badge bg-warning float-end">{{ pending_lab_payments }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/laboratory/labtesttype/">
+                    <i class="fas fa-vial"></i>
+                    Test Types
+                </a>
+            </li>
+            
+            <!-- Pharmacy -->
+            <li class="nav-item mt-3">
+                <small class="text-uppercase text-muted px-3">Pharmacy</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'pharmacy' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'pharmacy_dashboard' %}">
+                    <i class="fas fa-pills"></i>
+                    Pharmacy
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-capsules"></i>
+                    Medicine Stock
+                </a>
+            </li>
+            
+            <!-- Billing -->
+            <li class="nav-item mt-3">
+                <small class="text-uppercase text-muted px-3">Billing</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'payment_list' %}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    Payments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="#">
+                    <i class="fas fa-file-invoice"></i>
+                    Invoices
+                </a>
+            </li>
+            
+            <!-- Reports -->
+            {% if user.is_authenticated and user.role == 'ADMIN' %}
+            <li class="nav-item mt-3">
+                <small class="text-uppercase text-muted px-3">Reports</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'financial_reports' %}">
+                    <i class="fas fa-chart-bar"></i>
+                    Financial Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-chart-line"></i>
+                    Analytics
+                </a>
+            </li>
+            {% endif %}
+            
+            <!-- System -->
+            <li class="nav-item mt-3">
+                <small class="text-uppercase text-muted px-3">System</small>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'notification' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'notifications' %}">
+                    <i class="fas fa-bell"></i>
+                    Notifications
+                    {% if unread_notifications_count > 0 %}
+                    <span class="badge bg-danger float-end">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'admin:index' %}">
+                    <i class="fas fa-cog"></i>
+                    Administration
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Quick Stats (Admin Only) -->
+        {% if user.is_authenticated and user.role == 'ADMIN' %}
+        <div class="mt-4 p-3 border-top">
+            <h6 class="text-center mb-3">Quick Stats</h6>
+            <div class="row text-center">
+                <div class="col-6 mb-2">
+                    <small class="text-muted d-block">Today's Income</small>
+                    <strong class="text-success" id="todayIncome">ETB 0</strong>
+                </div>
+                <div class="col-6 mb-2">
+                    <small class="text-muted d-block">Today's Patients</small>
+                    <strong class="text-primary" id="todayPatients">0</strong>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</nav>

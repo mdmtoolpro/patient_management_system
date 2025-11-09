@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Lab Results - {{ lab_request.test_type.name }} - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-file-medical me-2"></i>
+            Lab Test Results
+        </h2>
+        <a href="{% url 'visit_detail' lab_request.visit.visit_id %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Visit
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Lab Test Information -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Test Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Request ID:</th>
+                            <td><strong>{{ lab_request.request_id }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Patient:</th>
+                            <td>{{ lab_request.visit.patient }}</td>
+                        </tr>
+                        <tr>
+                            <th>Test Type:</th>
+                            <td>{{ lab_request.test_type.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Description:</th>
+                            <td>{{ lab_request.test_type.description }}</td>
+                        </tr>
+                        <tr>
+                            <th>Requested By:</th>
+                            <td>Dr. {{ lab_request.requested_by.get_full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Performed By:</th>
+                            <td>{{ test_result.performed_by.get_full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Completed:</th>
+                            <td>{{ lab_request.completed_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'visit_detail' lab_request.visit.visit_id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-notes-medical me-1"></i> Back to Patient Visit
+                        </a>
+                        {% if not prescription %}
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#prescriptionModal">
+                            <i class="fas fa-prescription me-1"></i> Write Prescription
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Test Results</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Result Value -->
+                    {% if test_result.result_value %}
+                    <div class="alert {% if lab_request.is_abnormal %}alert-warning{% else %}alert-success{% endif %}">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-{% if lab_request.is_abnormal %}exclamation-triangle{% else %}check-circle{% endif %} me-2"></i>
+                            Result: {{ test_result.result_value }}
+                        </h6>
+                        {% if test_result.normal_range %}
+                        <p class="mb-1"><strong>Normal Range:</strong> {{ test_result.normal_range }}</p>
+                        {% endif %}
+                        {% if test_result.unit %}
+                        <p class="mb-0"><strong>Unit:</strong> {{ test_result.unit }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Findings -->
+                    {% if test_result.findings %}
+                    <div class="mb-4">
+                        <h6><i class="fas fa-search me-2"></i> Findings</h6>
+                        <div class="border rounded p-3 bg-light">
+                            {{ test_result.findings|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Interpretation -->
+                    {% if test_result.interpretation %}
+                    <div class="mb-4">
+                        <h6><i class="fas fa-stethoscope me-2"></i> Medical Interpretation</h6>
+                        <div class="border rounded p-3 bg-light">
+                            {{ test_result.interpretation|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Result Data (JSON) -->
+                    {% if test_result.result_data %}
+                    <div>
+                        <h6><i class="fas fa-database me-2"></i> Detailed Results</h6>
+                        <div class="border rounded p-3">
+                            <pre class="mb-0"><code>{{ test_result.result_data|pprint }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Prescription Status -->
+            {% if prescription %}
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-prescription me-2"></i>
+                        Prescription Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">Prescription Created</h6>
+                        <p class="mb-2"><strong>Prescription ID:</strong> {{ prescription.prescription_id }}</p>
+                        <p class="mb-2"><strong>Status:</strong> <span class="badge bg-{% if prescription.status == 'PENDING' %}warning{% elif prescription.status == 'DISPENSED' %}success{% else %}info{% endif %}">{{ prescription.get_status_display }}</span></p>
+                        <p class="mb-0"><strong>Created:</strong> {{ prescription.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                    
+                    {% if prescription.notes %}
+                    <div class="mt-3">
+                        <h6>Doctor's Notes:</h6>
+                        <div class="border rounded p-3 bg-light">
+                            {{ prescription.notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <a href="{% url 'prescription_detail' prescription.prescription_id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i> View Prescription Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Prescription Modal -->
+{% if not prescription %}
+<div class="modal fade" id="prescriptionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-prescription me-2"></i>
+                    Create Prescription
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Patient:</strong> {{ lab_request.visit.patient }} | 
+                    <strong>Visit ID:</strong> {{ lab_request.visit.visit_id }}
+                </div>
+
+                <form method="post" id="prescriptionForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="create_prescription" value="true">
+                    
+                    {{ prescription_form|crispy }}
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        This prescription will be sent to the pharmacy for dispensing. 
+                        You can add specific medications later in the pharmacy module.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="prescriptionForm" class="btn btn-success">
+                    <i class="fas fa-save me-2"></i> Create Prescription
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

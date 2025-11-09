@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Process Lab Test - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-vial me-2"></i>
+                    Process Lab Test
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Test Information -->
+                <div class="alert alert-primary">
+                    <h5 class="alert-heading">Test Details</h5>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Request ID:</strong> {{ lab_request.request_id }}</p>
+                            <p><strong>Patient:</strong> {{ lab_request.visit.patient }}</p>
+                            <p><strong>Patient ID:</strong> {{ lab_request.visit.patient.patient_id }}</p>
+                            <p><strong>Age:</strong> 
+                                {% with age=lab_request.visit.patient.date_of_birth|timesince %}
+                                    {{ age.split|first }} years
+                                {% endwith %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Test Type:</strong> {{ lab_request.test_type.name }}</p>
+                            <p><strong>Turnaround Time:</strong> {{ lab_request.test_type.turnaround_time }} hours</p>
+                            <p><strong>Requested By:</strong> Dr. {{ lab_request.requested_by.get_full_name }}</p>
+                            <p><strong>Requested Date:</strong> {{ lab_request.requested_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% if lab_request.doctor_notes %}
+                    <div class="mt-2">
+                        <strong>Doctor's Notes:</strong> {{ lab_request.doctor_notes }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Test Description -->
+                <div class="alert alert-light border">
+                    <h6><i class="fas fa-info-circle me-2 text-info"></i>Test Description</h6>
+                    <p class="mb-0">{{ lab_request.test_type.description }}</p>
+                </div>
+
+                <!-- Result Form -->
+                <form method="post">
+                    {% csrf_token %}
+                    
+              
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_abnormal" id="is_abnormal" 
+                                   {% if form.is_abnormal.value %}checked{% endif %}>
+                            <label class="form-check-label text-danger fw-bold" for="is_abnormal">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Abnormal Result
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Check this box if the result falls outside the normal reference range
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            {{ form.findings|as_crispy_field }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            {{ form.interpretation|as_crispy_field }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            {{ form.result_data|as_crispy_field }}
+                        </div>
+                    </div>
+
+                    <!-- Form Instructions -->
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Important Notes</h6>
+                        <ul class="mb-0">
+                            <li>Enter results accurately and double-check all values</li>
+                            <li>Provide clear interpretation for the requesting physician</li>
+                            <li>Mark abnormal results to alert the doctor</li>
+                            <li>Once submitted, results cannot be edited</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Submit Results
+                        </button>
+                        <a href="{% url 'lab_requests_list' %}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Reference for Common Tests -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-book me-2"></i>
+                    Quick Reference - {{ lab_request.test_type.name }}
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if lab_request.test_type.name == 'CBC' %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Hemoglobin:</strong><br>
+                        Male: 13.8-17.2 g/dL<br>
+                        Female: 12.1-15.1 g/dL
+                    </div>
+                    <div class="col-md-4">
+                        <strong>WBC Count:</strong><br>
+                        4,500-11,000/μL
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Platelets:</strong><br>
+                        150,000-450,000/μL
+                    </div>
+                </div>
+                {% elif lab_request.test_type.name == 'RBS' %}
+                <div class="row">
+                    <div class="col-md-12">
+                        <strong>Random Blood Sugar:</strong><br>
+                        Normal: &lt; 140 mg/dL<br>
+                        Prediabetes: 140-199 mg/dL<br>
+                        Diabetes: ≥ 200 mg/dL
+                    </div>
+                </div>
+                {% elif lab_request.test_type.name == 'U/Dipstick' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>pH:</strong> 4.5-8.0<br>
+                        <strong>Protein:</strong> Negative<br>
+                        <strong>Glucose:</strong> Negative
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Ketones:</strong> Negative<br>
+                        <strong>Blood:</strong> Negative<br>
+                        <strong>Leukocytes:</strong> Negative
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Enter results based on standard reference ranges and clinical guidelines.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-fill unit and normal range based on test type
+    const testType = "{{ lab_request.test_type.name }}";
+    
+    // Set default units and ranges for common tests
+    const testDefaults = {
+        'CBC': { unit: '/μL', normal_range: 'See individual parameters' },
+        'RBS': { unit: 'mg/dL', normal_range: '< 140' },
+        'HBSag': { unit: 'IU/mL', normal_range: 'Negative < 0.9' },
+        'VDRL': { unit: 'titer', normal_range: 'Non-reactive' },
+        'Widal': { unit: 'titer', normal_range: '< 1:80' },
+        'RF': { unit: 'IU/mL', normal_range: '< 20' },
+        'U/Dipstick': { unit: '-', normal_range: 'See parameters' },
+        'U/microscopic': { unit: '-', normal_range: 'See parameters' }
+    };
+
+    if (testDefaults[testType]) {
+        $('#id_unit').val(testDefaults[testType].unit);
+        $('#id_normal_range').val(testDefaults[testType].normal_range);
+    }
+
+    // Enhance the result_data field with a description
+    $('#id_result_data').attr('placeholder', 'Enter detailed results, multiple parameters, or JSON data if needed...');
+    
+    // Add character counters for text areas
+    $('#id_findings, #id_interpretation').on('input', function() {
+        const length = $(this).val().length;
+        const maxLength = 1000;
+        const counter = $(this).next('.char-counter') || $('<small class="char-counter text-muted"></small>').insertAfter($(this));
+        counter.text(`${length}/${maxLength} characters`);
+        
+        if (length > maxLength) {
+            counter.addClass('text-danger');
+        } else {
+            counter.removeClass('text-danger');
+        }
+    });
+
+    // Alert for abnormal results
+    $('#is_abnormal').change(function() {
+        if (this.checked) {
+            alert('⚠️ Abnormal result marked. This will be highlighted for the physician.');
+        }
+    });
+});
+</script>
+
+<style>
+.char-counter {
+    display: block;
+    text-align: right;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}

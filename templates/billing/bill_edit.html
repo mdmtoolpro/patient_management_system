@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edit Bill {{ bill.bill_number }} - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Edit Bill: {{ bill.bill_number }}</h1>
+    <span class="badge bg-{% if bill.status == 'paid' %}success{% elif bill.status == 'partially_paid' %}warning{% else %}secondary{% endif %}">
+        {{ bill.get_status_display }}
+    </span>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Bill Items -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Bill Items</h5>
+                <span class="badge bg-primary">Total: ${{ bill.total_amount }}</span>
+            </div>
+            <div class="card-body">
+                {% if bill.items.all %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Qty</th>
+                                <th>Unit Price</th>
+                                <th>Total</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in bill.items.all %}
+                            <tr>
+                                <td>{{ item.get_item_type_display }}</td>
+                                <td>{{ item.description }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>${{ item.unit_price }}</td>
+                                <td>${{ item.total_price }}</td>
+                                <td>
+                                    <a href="{% url 'remove_bill_item' bill.pk item.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No items added to this bill yet.</p>
+                {% endif %}
+
+                <!-- Add Item Form -->
+                <div class="mt-4">
+                    <h6>Add New Item</h6>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ item_form.item_type|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ item_form.description|as_crispy_field }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ item_form.quantity|as_crispy_field }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ item_form.unit_price|as_crispy_field }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" name="add_item" class="btn btn-success w-100">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Payments</h5>
+            </div>
+            <div class="card-body">
+                {% if bill.payments.all %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Reference</th>
+                                <th>Received By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in bill.payments.all %}
+                            <tr>
+                                <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                <td>${{ payment.amount }}</td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                <td>{{ payment.reference|default:"-" }}</td>
+                                <td>{{ payment.received_by.get_full_name }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No payments recorded.</p>
+                {% endif %}
+
+                <!-- Add Payment Form -->
+                <div class="mt-4">
+                    <h6>Record Payment</h6>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ payment_form.amount|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ payment_form.payment_method|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ payment_form.reference|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" name="add_payment" class="btn btn-primary w-100">
+                                    <i class="fas fa-money-bill"></i> Pay
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{ payment_form.notes|as_crispy_field }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Bill Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Bill Summary</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Bill Number:</strong> {{ bill.bill_number }}</p>
+                <p><strong>Patient:</strong> {{ bill.patient.full_name }}</p>
+                <p><strong>Issue Date:</strong> {{ bill.issue_date }}</p>
+                <p><strong>Due Date:</strong> {{ bill.due_date }}</p>
+                <p><strong>Status:</strong> {{ bill.get_status_display }}</p>
+                <hr>
+                <p><strong>Subtotal:</strong> ${{ bill.subtotal }}</p>
+                <p><strong>Tax:</strong> ${{ bill.tax_amount }}</p>
+                <p><strong>Discount:</strong> ${{ bill.discount }}</p>
+                <p><strong>Total Amount:</strong> ${{ bill.total_amount }}</p>
+                <p><strong>Paid Amount:</strong> ${{ bill.paid_amount }}</p>
+                <p><strong>Balance Due:</strong> 
+                    <span class="badge bg-{% if bill.balance_due > 0 %}warning{% else %}success{% endif %}">
+                        ${{ bill.balance_due }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'bill_detail' bill.pk %}" class="btn btn-info">
+                        <i class="fas fa-eye"></i> View Bill
+                    </a>
+                    <a href="{% url 'bill_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-list"></i> All Bills
+                    </a>
+                    {% if user.is_administrator %}
+                    <a href="{% url 'bill_delete' bill.pk %}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Bill
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

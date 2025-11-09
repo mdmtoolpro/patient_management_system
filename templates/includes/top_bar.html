@@ -1,0 +1,68 @@
+<nav class="navbar navbar-expand-lg top-bar py-2">
+    <div class="container-fluid">
+        <!-- Clinic Brand -->
+        <a class="navbar-brand fw-bold fs-3" href="{% url 'dashboard' %}">
+            <i class="fas fa-hospital me-2"></i>
+            {{ clinic_name }}
+        </a>
+        
+        <!-- Mobile Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="topNavbar">
+            <!-- Notifications & User Menu -->
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                {% if user.is_authenticated %}
+                <!-- Notifications -->
+                <li class="nav-item me-3">
+                    <a class="nav-link position-relative" href="{% url 'notifications' %}">
+                        <i class="fas fa-bell fa-lg"></i>
+                        {% if unread_notifications_count > 0 %}
+                        <span class="notification-badge">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                
+                <!-- User Profile -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                        <div class="user-avatar me-2">
+                            {{ user.first_name|first }}{{ user.last_name|first }}
+                        </div>
+                        <div class="d-none d-md-block" style="color:black;">
+                            <strong> {{ user.get_full_name }}</strong>
+                            <small class="d-block">{{ user.get_role_display }}</small>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'admin:index' %}">
+                                <i class="fas fa-cog me-2"></i>Admin Panel
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'profile' %}">
+                                <i class="fas fa-user me-2"></i>My Profile
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'custom_logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'custom_login' %}">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

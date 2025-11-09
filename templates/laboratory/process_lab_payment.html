@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Process Payment - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    Process Lab Test Payment
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Test Information -->
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">Test Details</h5>
+                    <hr>
+                    <p><strong>Request ID:</strong> {{ lab_request.request_id }}</p>
+                    <p><strong>Patient:</strong> {{ lab_request.visit.patient }}</p>
+                    <p><strong>Test Type:</strong> {{ lab_request.test_type.name }}</p>
+                    <p><strong>Description:</strong> {{ lab_request.test_type.description }}</p>
+                    <p><strong>Price:</strong> <span class="text-success fw-bold">ETB {{ lab_request.test_type.price|floatformat:2 }}</span></p>
+                </div>
+
+                <!-- Payment Form -->
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Payment Method</strong></label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="payment_method" id="cash" value="CASH" checked>
+                                <label class="form-check-label" for="cash">
+                                    <i class="fas fa-money-bill me-1"></i> Cash
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="payment_method" id="card" value="CARD">
+                                <label class="form-check-label" for="card">
+                                    <i class="fas fa-credit-card me-1"></i> Card
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="payment_method" id="mobile" value="MOBILE">
+                                <label class="form-check-label" for="mobile">
+                                    <i class="fas fa-mobile-alt me-1"></i> Mobile Money
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Confirm Payment:</strong> Once processed, this payment cannot be refunded.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Confirm Payment - ETB {{ lab_request.test_type.price|floatformat:2 }}
+                        </button>
+                        <a href="{% url 'lab_requests_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

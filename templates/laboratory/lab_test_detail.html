@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Lab Test {{ lab_test.test_id }} - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Lab Test: {{ lab_test.test_id }}</h1>
+    <span class="badge bg-{% if lab_test.status == 'completed' %}success{% elif lab_test.status == 'in_progress' %}warning{% else %}info{% endif %}">
+        {{ lab_test.get_status_display }}
+    </span>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Test Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Test ID:</strong> {{ lab_test.test_id }}</p>
+                <p><strong>Patient:</strong> {{ lab_test.patient.full_name }}</p>
+                <p><strong>Test Type:</strong> {{ lab_test.test_type.name }}</p>
+                <p><strong>Ordered By:</strong> Dr. {{ lab_test.ordered_by.get_full_name }}</p>
+                <p><strong>Order Date:</strong> {{ lab_test.created_at|date:"M d, Y H:i" }}</p>
+                <p><strong>Status:</strong> {{ lab_test.get_status_display }}</p>
+                {% if lab_test.notes %}
+                <p><strong>Notes:</strong> {{ lab_test.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Test Details</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Test Description:</strong> {{ lab_test.test_type.description|default:"No description" }}</p>
+                <p><strong>Price:</strong> ${{ lab_test.test_type.price }}</p>
+                <p><strong>Turnaround Time:</strong> {{ lab_test.test_type.turnaround_time }} hours</p>
+            </div>
+        </div>
+
+        {% if request.user.role == 'lab_tech' or request.user.role == 'doctor' %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Update Test Status</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="ordered" {% if lab_test.status == 'ordered' %}selected{% endif %}>Ordered</option>
+                            <option value="in_progress" {% if lab_test.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="completed" {% if lab_test.status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    <button type="submit" name="update_status" class="btn btn-primary">Update Status</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

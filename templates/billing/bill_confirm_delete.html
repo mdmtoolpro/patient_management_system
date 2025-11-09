@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Bill - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Delete Bill</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to delete bill <strong>"{{ bill.bill_number }}"</strong> for patient <strong>"{{ bill.patient.full_name }}"</strong>?</p>
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This will also delete all associated bill items and payments. This action cannot be undone.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Yes, Delete Bill</button>
+                    <a href="{% url 'bill_edit' bill.pk %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

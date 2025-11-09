@@ -1,0 +1,87 @@
+{% extends 'account/base.html' %}
+
+{% block title %}Sign Up - Healthcare Clinic{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow auth-card">
+            <div class="card-header bg-success text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Already have an account? Then please 
+                    <a href="{% url 'account_login' %}">sign in</a>.
+                </p>
+
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    Please correct the errors below.
+                </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'account_signup' %}">
+                    {% csrf_token %}
+                    
+                    {% if redirect_field_value %}
+                    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_first_name" class="form-label">First Name</label>
+                            <input type="text" name="first_name" id="id_first_name" class="form-control" placeholder="First Name" required>
+                            {% if form.first_name.errors %}
+                            <div class="text-danger small">{{ form.first_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_last_name" class="form-label">Last Name</label>
+                            <input type="text" name="last_name" id="id_last_name" class="form-control" placeholder="Last Name" required>
+                            {% if form.last_name.errors %}
+                            <div class="text-danger small">{{ form.last_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">Email address</label>
+                        <input type="email" name="email" id="id_email" class="form-control" placeholder="Email address" required>
+                        {% if form.email.errors %}
+                        <div class="text-danger small">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password1" class="form-label">Password</label>
+                        <input type="password" name="password1" id="id_password1" class="form-control" placeholder="Password" required>
+                        {% if form.password1.errors %}
+                        <div class="text-danger small">{{ form.password1.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            Your password must contain at least 8 characters.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password2" class="form-label">Password (again)</label>
+                        <input type="password" name="password2" id="id_password2" class="form-control" placeholder="Password (again)" required>
+                        {% if form.password2.errors %}
+                        <div class="text-danger small">{{ form.password2.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

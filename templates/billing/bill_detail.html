@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Bill {{ bill.bill_number }} - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Bill: {{ bill.bill_number }}</h1>
+    <span class="badge bg-{% if bill.status == 'paid' %}success{% elif bill.status == 'partially_paid' %}warning{% else %}danger{% endif %}">
+        {{ bill.get_status_display }}
+    </span>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Bill Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Bill Number:</strong> {{ bill.bill_number }}</p>
+                <p><strong>Patient:</strong> {{ bill.patient.full_name }}</p>
+                <p><strong>Total Amount:</strong> ${{ bill.total_amount }}</p>
+                <p><strong>Paid Amount:</strong> ${{ bill.paid_amount }}</p>
+                <p><strong>Balance Due:</strong> ${{ bill.balance_due }}</p>
+                <p><strong>Status:</strong> {{ bill.get_status_display }}</p>
+                <p><strong>Issue Date:</strong> {{ bill.created_at|date:"M d, Y" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Payment History</h5>
+            </div>
+            <div class="card-body">
+                {% if bill.payments.all %}
+                <div class="list-group">
+                    {% for payment in bill.payments.all %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${{ payment.amount }}</h6>
+                            <small>{{ payment.payment_date|date:"M d, Y" }}</small>
+                        </div>
+                        <p class="mb-1"><strong>Method:</strong> {{ payment.get_payment_method_display }}</p>
+                        <small><strong>Received by:</strong> {{ payment.received_by.get_full_name }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No payments recorded</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Laboratory Test Requests - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-flask me-2"></i>
+        Laboratory Test Requests
+    </h2>
+    <div class="btn-group">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-filter me-1"></i> Filter
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="?status=">All Status</a></li>
+            <li><a class="dropdown-item" href="?status=REQUESTED">Requested</a></li>
+            <li><a class="dropdown-item" href="?status=PAYMENT_PENDING">Payment Pending</a></li>
+            <li><a class="dropdown-item" href="?status=PAYMENT_COMPLETED">Payment Completed</a></li>
+            <li><a class="dropdown-item" href="?status=IN_PROGRESS">In Progress</a></li>
+            <li><a class="dropdown-item" href="?status=COMPLETED">Completed</a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <h5>{{ lab_requests.count }}</h5>
+                <small>Total Requests</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <h5>{{ payment_pending }}</h5>
+                <small>Payment Pending</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <h5>{{ payment_inprogress }}</h5>
+                <small>In Progress</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h5>{{ payment_complete }}</h5>
+                <small>Completed</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Test Requests</h5>
+    </div>
+    <div class="card-body">
+        {% if lab_requests %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Patient</th>
+                        <th>Test Type</th>
+                        <th>Price</th>
+                        <th>Requested By</th>
+                        <th>Status</th>
+                        <th>Requested Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in lab_requests %}
+                    <tr>
+                        <td>
+                            <strong>{{ request.request_id }}</strong>
+                        </td>
+                        <td>{{ request.visit.patient }}</td>
+                        <td>
+                            <strong>{{ request.test_type.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ request.test_type.description|truncatewords:5 }}</small>
+                        </td>
+                        <td>
+                            <strong class="text-success">ETB {{ request.test_type.price|floatformat:2 }}</strong>
+                        </td>
+                        <td>{{ request.requested_by.get_full_name }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if request.status == 'COMPLETED' %}bg-success
+                                {% elif request.status == 'IN_PROGRESS' %}bg-info
+                                {% elif request.status == 'PAYMENT_COMPLETED' %}bg-primary
+                                {% elif request.status == 'PAYMENT_PENDING' %}bg-warning
+                                {% elif request.status == 'REQUESTED' %}bg-secondary
+                                {% else %}bg-dark{% endif %}">
+                                {{ request.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ request.requested_at|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                
+                                {% if request.status == 'PAYMENT_PENDING' %}
+                                    <a href="{% url 'process_lab_payment' request.request_id %}" 
+                                       class="btn btn-success" title="Process Payment">
+                                        <i class="fas fa-money-bill-wave"></i> Pay
+                                    </a>
+                                {% endif %}
+                                
+                                {% if request.status == 'PAYMENT_COMPLETED' %}
+                                    <a href="{% url 'assign_lab_request' request.request_id %}" 
+                                       class="btn btn-primary" title="Assign Technician">
+                                        <i class="fas fa-user-plus"></i> Assign
+                                    </a>
+                                {% endif %}
+                                
+                                {% if request.status == 'IN_PROGRESS' %}
+                                    <a href="{% url 'process_lab_test' request.request_id %}" 
+                                       class="btn btn-info" title="Process Test">
+                                        <i class="fas fa-vial"></i> Process
+                                    </a>
+                                {% endif %}
+                                
+                                <button class="btn btn-outline-secondary" 
+                                        data-bs-toggle="tooltip" 
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-flask fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No lab test requests</h5>
+            <p class="text-muted">No laboratory test requests found matching your criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Enable tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+</script>
+{% endblock %}

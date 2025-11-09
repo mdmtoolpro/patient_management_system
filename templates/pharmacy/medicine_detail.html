@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ medicine.name }} - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ medicine.name }}</h1>
+    <div>
+        {% if user.is_administrator %}
+        <a href="{% url 'medicine_edit' medicine.pk %}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <a href="{% url 'medicine_delete' medicine.pk %}" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Delete
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Medicine Details</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ medicine.name }}</p>
+                <p><strong>Generic Name:</strong> {{ medicine.generic_name|default:"-" }}</p>
+                <p><strong>Manufacturer:</strong> {{ medicine.manufacturer|default:"-" }}</p>
+                <p><strong>Category:</strong> {{ medicine.get_category_display }}</p>
+                <p><strong>Strength:</strong> {{ medicine.strength|default:"-" }}</p>
+                <p><strong>Unit:</strong> {{ medicine.unit|default:"-" }}</p>
+                <p><strong>Price:</strong> ${{ medicine.price }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Stock Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Stock Quantity:</strong> 
+                    <span class="badge bg-{% if medicine.is_low_stock %}danger{% else %}success{% endif %}">
+                        {{ medicine.stock_quantity }}
+                    </span>
+                </p>
+                <p><strong>Minimum Stock Level:</strong> {{ medicine.min_stock_level }}</p>
+                <p><strong>Expiry Date:</strong> {{ medicine.expiry_date|default:"Not set" }}</p>
+                <p><strong>Status:</strong> 
+                    {% if medicine.is_low_stock %}
+                    <span class="badge bg-warning">Low Stock</span>
+                    {% endif %}
+                    {% if medicine.is_expired %}
+                    <span class="badge bg-danger">Expired</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if medicine.description %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Description</h5>
+            </div>
+            <div class="card-body">
+                {{ medicine.description|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Types - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Laboratory Test Types</h1>
+    {% if user.is_administrator %}
+    <a href="{% url 'test_type_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Test Type
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">All Test Types</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Test Name</th>
+                        <th>Price</th>
+                        <th>Turnaround Time</th>
+                        <th>Sample Type</th>
+                        {% if user.is_administrator %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test_type in test_types %}
+                    <tr>
+                        <td>
+                            <strong>{{ test_type.name }}</strong>
+                            {% if test_type.description %}
+                            <br><small class="text-muted">{{ test_type.description|truncatewords:10 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>${{ test_type.price }}</td>
+                        <td>{{ test_type.turnaround_time }} hours</td>
+                        <td>{{ test_type.sample_type|default:"-" }}</td>
+                        {% if user.is_administrator %}
+                        <td>
+                            <a href="{% url 'test_type_edit' test_type.pk %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user.is_administrator %}5{% else %}4{% endif %}" class="text-center text-muted">
+                            No test types found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

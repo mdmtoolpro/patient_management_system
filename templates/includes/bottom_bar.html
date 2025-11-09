@@ -1,0 +1,41 @@
+<!-- Bottom Footer -->
+<footer class="bottom-bar mt-5">
+    <div class="container-fluid">
+        <div class="row align-items-center py-3">
+            <div class="col-md-6 text-center text-md-start">
+                <span class="text-white">
+                    &copy; 2025 Dr. Gudeta Healthcare Clinic. All rights reserved.
+                </span>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <span class="text-white-50">
+                    <i class="fas fa-phone me-1"></i> +251 XXX XXX XXX
+                    <i class="fas fa-envelope ms-3 me-1"></i> info@gudetaclinic.com
+                    <i class="fas fa-map-marker-alt ms-3 me-1"></i> Addis Ababa, Ethiopia
+                </span>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+// Load dashboard stats for admin users
+$(document).ready(function() {
+    {% if user.is_authenticated and user.role == 'ADMIN' %}
+    $.get('{% url "dashboard_stats" %}', function(data) {
+        if (!data.error) {
+            $('#todayIncome').text('ETB ' + data.today_income.toFixed(2));
+            $('#todayPatients').text(data.today_patients);
+        }
+    });
+    {% endif %}
+    
+    // Auto-collapse sidebar on mobile
+    if ($(window).width() < 768) {
+        $('.sidebar').addClass('collapse');
+    }
+    
+    // Add active class to parent dropdowns
+    $('.nav-link.active').parents('.dropdown').addClass('active');
+});
+</script>

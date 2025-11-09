@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff Management - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Staff Management</h1>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">All Staff Members</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Phone</th>
+                        <th>Specialization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_members %}
+                    <tr>
+                        <td>{{ staff.get_full_name }}</td>
+                        <td>{{ staff.email }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ staff.get_role_display }}</span>
+                        </td>
+                        <td>{{ staff.phone|default:"-" }}</td>
+                        <td>{{ staff.specialization|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No staff members found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

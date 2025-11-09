@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Prescriptions - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Prescriptions</h1>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">All Prescriptions</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Prescribed By</th>
+                        <th>Diagnosis</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prescription in prescriptions %}
+                    <tr>
+                        <td>{{ prescription.patient.full_name }}</td>
+                        <td>Dr. {{ prescription.prescribed_by.get_full_name }}</td>
+                        <td>{{ prescription.diagnosis|truncatewords:8|default:"-" }}</td>
+                        <td>
+                            <span class="badge bg-{% if prescription.status == 'dispensed' %}success{% elif prescription.status == 'issued' %}warning{% else %}secondary{% endif %}">
+                                {{ prescription.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ prescription.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'prescription_detail' prescription.prescription_id %}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No prescriptions found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

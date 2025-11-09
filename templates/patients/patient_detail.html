@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient: {{ patient }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Patient Info Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    Patient Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Patient ID:</th>
+                        <td><strong>{{ patient.patient_id }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Name:</th>
+                        <td>{{ patient.first_name }} {{ patient.last_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Birth:</th>
+                        <td>{{ patient.date_of_birth }} (Age: {% with age=patient.date_of_birth|timesince %}{{ age.split|first }} years{% endwith %})</td>
+                    </tr>
+                    <tr>
+                        <th>Gender:</th>
+                        <td>{{ patient.get_gender_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ patient.phone }}</td>
+                    </tr>
+                    <tr>
+                        <th>Blood Group:</th>
+                        <td>
+                            {% if patient.blood_group %}
+                                <span class="badge bg-danger">{{ patient.blood_group }}</span>
+                            {% else %}
+                                <span class="text-muted">Not specified</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                
+                {% if patient.allergies %}
+                <div class="alert alert-warning mt-3">
+                    <strong>Allergies:</strong> {{ patient.allergies }}
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <a href="{% url 'create_visit' patient.patient_id %}" class="btn btn-success w-100">
+                        <i class="fas fa-plus me-1"></i> New Visit
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Medical History -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Medical History</h6>
+            </div>
+            <div class="card-body">
+                {% if patient.medical_history %}
+                    <p>{{ patient.medical_history }}</p>
+                {% else %}
+                    <p class="text-muted">No medical history recorded.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Visit History -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Visit History
+                </h5>
+                <span class="badge bg-primary">{{ visits.count }} visits</span>
+            </div>
+            <div class="card-body">
+                {% if visits %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Visit ID</th>
+                                <th>Date</th>
+                                <th>Doctor</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for visit in visits %}
+                            <tr>
+                                <td>
+                                    <strong>{{ visit.visit_id }}</strong>
+                                </td>
+                                <td>{{ visit.registration_time|date:"M d, Y" }}</td>
+                                <td>{{ visit.assigned_doctor.get_full_name }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if visit.status == 'COMPLETED' %}bg-success
+                                        {% elif visit.status == 'WITH_DOCTOR' %}bg-primary
+                                        {% elif visit.status == 'LAB_REQUESTED' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ visit.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'visit_detail' visit.visit_id %}" class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">No visit history</h6>
+                    <p class="text-muted">This patient hasn't had any visits yet.</p>
+                    <a href="{% url 'create_visit' patient.patient_id %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Create First Visit
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

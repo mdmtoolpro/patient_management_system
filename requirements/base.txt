@@ -1,0 +1,15 @@
+Django==4.2.7
+djangorestframework==3.14.0
+django-allauth==0.54.0
+django-axes==6.0.0
+django-crispy-forms==2.0
+crispy-bootstrap5==0.7
+django-phonenumber-field==7.1.0
+phonenumbers==8.13.19
+Pillow==10.0.1
+reportlab==4.0.4
+openpyxl==3.1.2
+python-decouple==3.8
+django-environ==0.10.0
+weasyprint==59.0
+django-compressor==4.4

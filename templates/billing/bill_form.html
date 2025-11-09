@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Bill - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Create New Bill</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Select Patient</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="patient" class="form-label">Patient</label>
+                        <select name="patient" id="patient" class="form-select" required>
+                            <option value="">Select a patient</option>
+                            {% for patient in patients %}
+                            <option value="{{ patient.id }}">{{ patient.full_name }} ({{ patient.patient_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-success">Create Bill</button>
+                        <a href="{% url 'bill_list' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

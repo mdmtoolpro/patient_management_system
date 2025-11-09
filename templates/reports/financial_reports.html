@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial Reports - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-chart-bar me-2"></i>
+            Financial Reports
+        </h2>
+        <div class="btn-group">
+            <a href="{% url 'export_financial_report' %}?period={{ period }}&year={{ year }}&month={{ month }}" 
+               class="btn btn-success">
+                <i class="fas fa-file-export me-2"></i>Export CSV
+            </a>
+        </div>
+    </div>
+    
+    <!-- Period Filter -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Report Period</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Period Type</label>
+                    <select name="period" class="form-select" onchange="this.form.submit()">
+                        <option value="daily" {% if period == 'daily' %}selected{% endif %}>Daily</option>
+                        <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly</option>
+                        <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly</option>
+                        <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>Yearly</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-select" onchange="this.form.submit()">
+                        {% for y in available_years %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                {% if period == 'monthly' %}
+                <div class="col-md-3">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-select" onchange="this.form.submit()">
+                        {% for m in 1..12 %}
+                        <option value="{{ m }}" {% if m == month %}selected{% endif %}>
+                            {{ m }} - {{ m|date:"F" }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Financial Summary - {{ period_label }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 text-center">
+                    <div class="card bg-primary text-white mb-3">
+                        <div class="card-body">
+                            <h3>ETB {{ total_income|floatformat:2 }}</h3>
+                            <p class="mb-0">Total Income</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="card bg-success text-white mb-3">
+                        <div class="card-body">
+                            <h3>ETB {{ registration_income|floatformat:2 }}</h3>
+                            <p class="mb-0">Registration Income</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="card bg-info text-white mb-3">
+                        <div class="card-body">
+                            <h3>ETB {{ lab_income|floatformat:2 }}</h3>
+                            <p class="mb-0">Laboratory Income</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="card bg-warning text-white mb-3">
+                        <div class="card-body">
+                            <h3>ETB {{ pharmacy_income|floatformat:2 }}</h3>
+                            <p class="mb-0">Pharmacy Income</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Patient Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h3 class="text-primary">{{ total_patients }}</h3>
+                            <p class="text-muted">Total Patients</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="text-success">{{ new_patients }}</h3>
+                            <p class="text-muted">New Patients</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="text-info">{{ total_visits }}</h3>
+                            <p class="text-muted">Total Visits</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Service Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <h3 class="text-warning">{{ total_lab_tests }}</h3>
+                            <p class="text-muted">Lab Tests</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h3 class="text-danger">{{ total_prescriptions }}</h3>
+                            <p class="text-muted">Prescriptions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Income Distribution Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Income Distribution</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="incomeChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Monthly Chart (for yearly reports) -->
+    {% if period == 'yearly' and monthly_data %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Monthly Income Breakdown - {{ year }}</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="monthlyChart" width="400" height="150"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Income Distribution Pie Chart
+const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+const incomeChart = new Chart(incomeCtx, {
+    type: 'pie',
+    data: {
+        labels: ['Registration', 'Laboratory', 'Pharmacy'],
+        datasets: [{
+            data: [
+                {{ registration_income }},
+                {{ lab_income }},
+                {{ pharmacy_income }}
+            ],
+            backgroundColor: [
+                '#007bff',
+                '#17a2b8', 
+                '#ffc107'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+
+{% if period == 'yearly' and monthly_data %}
+// Monthly Income Line Chart
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyData = {{ monthly_data_json|safe }};
+
+const monthlyChart = new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: monthlyData.map(item => item.month),
+        datasets: [
+            {
+                label: 'Registration',
+                data: monthlyData.map(item => item.registration),
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                fill: true
+            },
+            {
+                label: 'Laboratory',
+                data: monthlyData.map(item => item.lab),
+                borderColor: '#17a2b8',
+                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                fill: true
+            },
+            {
+                label: 'Pharmacy',
+                data: monthlyData.map(item => item.pharmacy),
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Amount (ETB)'
+                }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

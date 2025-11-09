@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Payment History{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-money-bill-wave me-2"></i>
+        Payment Management
+    </h2>
+    <div class="btn-group">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+            <i class="fas fa-filter me-1"></i> Filter
+        </button>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filter Payments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="get">
+                    {{ form|crispy }}
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="{% url 'payment_list' %}" class="btn btn-secondary">Clear</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">All Payments</h5>
+    </div>
+    <div class="card-body">
+        {% if payments %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Payment ID</th>
+                        <th>Patient</th>
+                        <th>Type</th>
+                        <th>Method</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Processed By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>
+                            <strong>{{ payment.payment_id }}</strong>
+                            {% if payment.receipt_number %}
+                            <br><small class="text-muted">RCP: {{ payment.receipt_number }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ payment.patient }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if payment.payment_type == 'REGISTRATION' %}bg-primary
+                                {% elif payment.payment_type == 'LAB_TEST' %}bg-info
+                                {% elif payment.payment_type == 'MEDICINE' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
+                                {{ payment.get_payment_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ payment.get_payment_method_display }}</td>
+                        <td>
+                            <strong class="text-success">ETB {{ payment.amount|floatformat:2 }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if payment.status == 'COMPLETED' %}bg-success
+                                {% elif payment.status == 'PENDING' %}bg-warning
+                                {% else %}bg-danger{% endif %}">
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ payment.created_at|date:"M d, Y" }}</td>
+                        <td>{{ payment.processed_by.get_full_name }}</td>
+                        <td>
+                            <a href="{% url 'payment_detail' payment.payment_id %}" class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="text-success">
+                            ETB {{ total_completed|default:0|floatformat:2 }}
+                        </h5>
+                        <small>Total Completed</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="text-warning">
+                            ETB {{ total_pending|default:0|floatformat:2 }}
+                        </h5>
+                        <small>Total Pending</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5>{{ payments.count }}</h5>
+                        <small>Total Transactions</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No payments found</h5>
+            <p class="text-muted">No payment records match your search criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form when date fields change
+    $('input[type="date"]').change(function() {
+        $(this).closest('form').submit();
+    });
+});
+</script>
+{% endblock %}
