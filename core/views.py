@@ -35,18 +35,14 @@ def custom_login(request):
     else:
         form = AuthenticationForm()
     
-    # Use your existing login template
     return render(request, 'account/login.html', {'form': form})
 
 def custom_logout(request):
-    """Custom logout view that uses your existing logout template"""
     logout(request)
     messages.info(request, 'You have been logged out successfully.')
-    return render(request, 'account/logout.html')
+    return render(request, 'account/login.html')
 
 def custom_signup(request):
-    """Signup view - you can customize this based on your needs"""
-    # If you don't need public signup, redirect to login
     messages.info(request, 'Staff accounts are created by administrators.')
     return redirect('custom_login')
 

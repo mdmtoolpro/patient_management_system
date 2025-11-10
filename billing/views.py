@@ -168,7 +168,6 @@ def process_medicine_payment(request, prescription_id):
 def payment_list(request):
     form = PaymentSearchForm(request.GET or None)
     payments = Payment.objects.all().order_by('-created_at')
-    
     if form.is_valid():
         if form.cleaned_data['patient_id']:
             payments = payments.filter(patient__patient_id__icontains=form.cleaned_data['patient_id'])
@@ -178,10 +177,22 @@ def payment_list(request):
             payments = payments.filter(created_at__date__gte=form.cleaned_data['date_from'])
         if form.cleaned_data['date_to']:
             payments = payments.filter(created_at__date__lte=form.cleaned_data['date_to'])
-    
+
+    total_pending = 0
+    pay_pending = Payment.objects.filter(status='PENDING').values_list('amount', flat=True)
+    for total_pend in pay_pending:
+        total_pending = total_pending + total_pend
+    total_paid = 0
+
+    pay_complete = Payment.objects.filter(status='COMPLETED').values_list('amount', flat=True)
+    for total_complete in pay_complete:
+        total_paid = total_paid + total_complete
+
     context = {
         'payments': payments,
         'form': form,
+        'total_paid': total_paid,
+        'total_pending': total_pending,
     }
     return render(request, 'billing/payment_list.html', context)
 

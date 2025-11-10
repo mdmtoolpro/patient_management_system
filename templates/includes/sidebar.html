@@ -23,81 +23,88 @@
             </li>
             
             <!-- Patient Management -->
-            <li class="nav-item mt-3">
-                <small class="text-uppercase text-muted px-3">Patient Management</small>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'patient' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'patient_list' %}">
-                    <i class="fas fa-user-injured"></i>
-                    Patients
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'visit' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="#">
-                    <i class="fas fa-calendar-check"></i>
-                    Appointments
-                </a>
-            </li>
+            {% if user.role in 'ADMIN,DOCTOR,RECEPTIONIST' %}
+                <li class="nav-item mt-3">
+                    <small class="text-uppercase text-muted px-3">Patient Management</small>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'patient' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'patient_list' %}">
+                        <i class="fas fa-user-injured"></i>
+                        Patients
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'visit' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="#">
+                        <i class="fas fa-calendar-check"></i>
+                        Appointments
+                    </a>
+                </li>
+            {% endif %}
             
             <!-- Laboratory -->
+            {% if user.role in 'ADMIN,DOCTOR,CASHIER,LAB_TECH' %}
                <li class="nav-item mt-3">
                 <small class="text-uppercase text-muted px-3">Laboratory</small>
-            </li>
-            <li class="nav-item">
+                </li>
+                <li class="nav-item">
                 <a class="nav-link {% if 'lab' in request.resolver_match.url_name or request.resolver_match.app_name == 'laboratory' %}active{% endif %}" 
                    href="{% url 'lab_requests_list' %}">
                     <i class="fas fa-flask"></i>
                     Lab Tests
-                    {% if user.role in 'CASHIER,RECEPTIONIST,ADMIN' and pending_lab_payments > 0 %}
-                    <span class="badge bg-warning float-end">{{ pending_lab_payments }}</span>
+                    {% if user.role in 'CASHIER,ADMIN' and pending_lab_payments > 0 %}
+                        <span class="badge bg-warning float-end">{{ pending_lab_payments }}</span>
                     {% endif %}
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/admin/laboratory/labtesttype/">
-                    <i class="fas fa-vial"></i>
-                    Test Types
-                </a>
-            </li>
-            
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/laboratory/labtesttype/">
+                        <i class="fas fa-vial"></i>
+                        Test Types
+                    </a>
+                </li>
+            {% endif %}
             <!-- Pharmacy -->
-            <li class="nav-item mt-3">
-                <small class="text-uppercase text-muted px-3">Pharmacy</small>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'pharmacy' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'pharmacy_dashboard' %}">
-                    <i class="fas fa-pills"></i>
-                    Pharmacy
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-capsules"></i>
-                    Medicine Stock
-                </a>
-            </li>
-            
+            {% if user.role in 'ADMIN,PHARMACIST' %}
+                <li class="nav-item mt-3">
+                    <small class="text-uppercase text-muted px-3">Pharmacy</small>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'pharmacy' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'pharmacy_dashboard' %}">
+                        <i class="fas fa-pills"></i>
+                        Pharmacy
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-capsules"></i>
+                        Medicine Stock
+                    </a>
+                </li>
+            {% endif %}
             <!-- Billing -->
-            <li class="nav-item mt-3">
-                <small class="text-uppercase text-muted px-3">Billing</small>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'payment_list' %}">
-                    <i class="fas fa-money-bill-wave"></i>
-                    Payments
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="#">
-                    <i class="fas fa-file-invoice"></i>
-                    Invoices
-                </a>
-            </li>
+            {% if user.role in 'ADMIN,DOCTOR,CASHIER' %}
+                <li class="nav-item mt-3">
+                    <small class="text-uppercase text-muted px-3">Billing</small>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'payment_list' %}">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Payments
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="#">
+                        <i class="fas fa-file-invoice"></i>
+                        Invoices
+                    </a>
+                </li>
+            {% endif %}
             
             <!-- Reports -->
             {% if user.is_authenticated and user.role == 'ADMIN' %}
@@ -133,29 +140,30 @@
                     {% endif %}
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'admin:index' %}">
-                    <i class="fas fa-cog"></i>
-                    Administration
-                </a>
-            </li>
+            {% if user.is_authenticated and user.role == 'ADMIN' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'admin:index' %}">
+                        <i class="fas fa-cog"></i>
+                        Administration
+                    </a>
+                </li>
         </ul>
         
         <!-- Quick Stats (Admin Only) -->
-        {% if user.is_authenticated and user.role == 'ADMIN' %}
-        <div class="mt-4 p-3 border-top">
-            <h6 class="text-center mb-3">Quick Stats</h6>
-            <div class="row text-center">
-                <div class="col-6 mb-2">
-                    <small class="text-muted d-block">Today's Income</small>
-                    <strong class="text-success" id="todayIncome">ETB 0</strong>
-                </div>
-                <div class="col-6 mb-2">
-                    <small class="text-muted d-block">Today's Patients</small>
-                    <strong class="text-primary" id="todayPatients">0</strong>
+        
+            <div class="mt-4 p-3 border-top">
+                <h6 class="text-center mb-3">Quick Stats</h6>
+                <div class="row text-center">
+                    <div class="col-6 mb-2">
+                        <small class="text-muted d-block">Today's Income</small>
+                        <strong class="text-success" id="todayIncome">ETB 0</strong>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <small class="text-muted d-block">Today's Patients</small>
+                        <strong class="text-primary" id="todayPatients">0</strong>
+                    </div>
                 </div>
             </div>
-        </div>
         {% endif %}
     </div>
 </nav>

@@ -44,18 +44,18 @@
             <div class="px-3 d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-flask"></i> Laboratory</span>
                 {% if user.is_administrator or user.is_doctor %}
-                <a href="{% url 'lab_test_create' %}" class="btn btn-sm btn-success" title="Order Lab Test">
-                    <i class="fas fa-plus"></i>
-                </a>
+                    <a href="{% url 'lab_test_create' %}" class="btn btn-sm btn-success" title="Order Lab Test">
+                        <i class="fas fa-plus"></i>
+                    </a>
                 {% endif %}
             </div>
         </li>
         {% if user.is_administrator or user.is_doctor or user.is_lab_tech %}
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'lab_test_list' %}">
-                <i class="fas fa-list"></i> Lab Tests
-            </a>
-        </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'lab_test_list' %}">
+                    <i class="fas fa-list"></i> Lab Tests
+                </a>
+            </li>
         {% endif %}
         
         <!-- Pharmacy Section -->
@@ -63,23 +63,23 @@
             <div class="px-3 d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-pills"></i> Pharmacy</span>
                 {% if user.is_administrator %}
-                <a href="{% url 'medicine_create' %}" class="btn btn-sm btn-success" title="Add Medicine" target="_blank">
-                    <i class="fas fa-plus"></i>
-                </a>
+                    <a href="{% url 'medicine_create' %}" class="btn btn-sm btn-success" title="Add Medicine" target="_blank">
+                        <i class="fas fa-plus"></i>
+                    </a>
                 {% endif %}
             </div>
         </li>
         {% if user.is_administrator or user.is_doctor or user.is_pharmacist %}
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'medicine_list' %}">
-                <i class="fas fa-list"></i> Medicines
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'prescription_list' %}">
-                <i class="fas fa-file-prescription"></i> Prescriptions
-            </a>
-        </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'medicine_list' %}">
+                    <i class="fas fa-list"></i> Medicines
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription_list' %}">
+                    <i class="fas fa-file-prescription"></i> Prescriptions
+                </a>
+            </li>
         {% endif %}
         
         <!-- Billing Section -->
@@ -94,28 +94,28 @@
             </div>
         </li>
         {% if user.is_administrator or user.is_receptionist %}
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'bill_list' %}">
-                <i class="fas fa-list"></i> All Bills
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'financial_report' %}">
-                <i class="fas fa-chart-bar"></i> Reports
-            </a>
-        </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'bill_list' %}">
+                    <i class="fas fa-list"></i> All Bills
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'financial_report' %}">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+            </li>
         {% endif %}
         
         <!-- Staff Management - Available only to admin -->
         {% if user.is_administrator %}
-        <li class="nav-item mt-2">
-            <div class="px-3 d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-user-md"></i> Staff</span>
-                <a href="/admin/users/user/add/" class="btn btn-sm btn-success" title="Add Staff" target="_blank">
-                    <i class="fas fa-plus"></i>
-                </a>
-            </div>
-        </li>
+            <li class="nav-item mt-2">
+                <div class="px-3 d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-user-md"></i> Staff</span>
+                    <a href="/admin/users/user/add/" class="btn btn-sm btn-success" title="Add Staff" target="_blank">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                </div>
+            </li>
         <li class="nav-item">
             <a class="nav-link" href="{% url 'staff_list' %}">
                 <i class="fas fa-list"></i> All Staff
