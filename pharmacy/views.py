@@ -11,14 +11,25 @@ from users.models import User
 
 @login_required
 def pharmacy_dashboard(request):
-    if request.user.role != 'PHARMACIST':
+    if request.user.role not in ['PHARMACIST', 'CASHIER', 'ADMIN']:
         return render(request, '403.html', status=403)
     
-    pending_prescriptions = Prescription.objects.filter(status=Prescription.Status.PENDING)
+    # Get prescriptions based on user role
+    if request.user.role == 'PHARMACIST':
+        pending_prescriptions = Prescription.objects.filter(status=Prescription.Status.PENDING)
+        ready_prescriptions = Prescription.objects.filter(status=Prescription.Status.READY)
+    elif request.user.role == 'CASHIER':
+        pending_prescriptions = Prescription.objects.none()  # Cashiers don't see pending
+        ready_prescriptions = Prescription.objects.filter(status=Prescription.Status.READY)
+    else:  # ADMIN
+        pending_prescriptions = Prescription.objects.filter(status=Prescription.Status.PENDING)
+        ready_prescriptions = Prescription.objects.filter(status=Prescription.Status.READY)
+    
     active_carts = DispenseCart.objects.filter(pharmacist=request.user, is_active=True)
     
     context = {
         'pending_prescriptions': pending_prescriptions,
+        'ready_prescriptions': ready_prescriptions,
         'active_carts': active_carts,
     }
     return render(request, 'pharmacy/dashboard.html', context)
@@ -32,27 +43,39 @@ def prescription_list(request):
 def prescription_detail(request, prescription_id):
     prescription = get_object_or_404(Prescription, prescription_id=prescription_id)
     
-    # Check if a cart already exists for this prescription (by any pharmacist)
+    # Get the most recent active cart or create a new one
     try:
-        cart = DispenseCart.objects.get(prescription=prescription, is_active=True)
-        # If cart exists but belongs to another pharmacist, you can either:
-        # Option 1: Allow any pharmacist to continue the cart
-        # Option 2: Create a new cart and deactivate the old one
-        # Let's go with Option 1 for now
+        # Try to get the most recent active cart
+        cart = DispenseCart.objects.filter(
+            pharmacist=request.user,
+            prescription=prescription,
+            is_active=True
+        ).latest('created_at')
     except DispenseCart.DoesNotExist:
-        # Create new cart
+        # Create new cart if none exists
         cart = DispenseCart.objects.create(
             pharmacist=request.user,
             prescription=prescription,
             is_active=True
         )
+    except DispenseCart.MultipleObjectsReturned:
+        # Handle multiple active carts - get the most recent and deactivate others
+        carts = DispenseCart.objects.filter(
+            pharmacist=request.user,
+            prescription=prescription,
+            is_active=True
+        ).order_by('-created_at')
+        
+        # Keep the most recent cart active, deactivate others
+        cart = carts.first()
+        carts.exclude(id=cart.id).update(is_active=False)
     
     context = {
         'prescription': prescription,
         'cart': cart,
     }
     return render(request, 'pharmacy/prescription_detail.html', context)
-
+    
 @login_required
 @require_http_methods(["GET"])
 def medicine_search(request):
@@ -150,6 +173,7 @@ def add_to_cart(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
 
+
 @login_required
 def dispense_medicines(request, prescription_id):
     if request.method == 'POST':
@@ -181,13 +205,15 @@ def dispense_medicines(request, prescription_id):
             ).update(is_active=False)
             
             # Create notification for cashier
-            Notification.objects.create(
-                recipient=User.objects.filter(role='CASHIER').first(),
-                notification_type=Notification.NotificationType.PAYMENT,
-                title='Medicine Payment Required',
-                message=f'Patient {prescription.visit.patient} needs to pay for medicines',
-                related_object_id=prescription.prescription_id
-            )
+            cashiers = User.objects.filter(role='CASHIER', is_active=True)
+            for cashier in cashiers:
+                Notification.objects.create(
+                    recipient=cashier,
+                    notification_type=Notification.NotificationType.PAYMENT,
+                    title='Medicine Payment Required',
+                    message=f'Patient {prescription.visit.patient} needs to pay ETB {prescription.total_cost} for medicines',
+                    related_object_id=prescription.prescription_id
+                )
             
             return JsonResponse({'status': 'success', 'message': 'Medicines dispensed successfully'})
             

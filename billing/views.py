@@ -112,54 +112,76 @@ def assign_lab_request(request, request_id):
     return render(request, 'billing/assign_request.html', context)
 
 @login_required
+def pending_medicine_payments(request):
+    """View for pending medicine payments"""
+    if request.user.role not in ['CASHIER', 'RECEPTIONIST', 'ADMIN']:
+        messages.error(request, "You don't have permission to view pending payments.")
+        return redirect('dashboard')
+    
+    # Get prescriptions that are ready but not paid
+    pending_prescriptions = Prescription.objects.filter(
+        status=Prescription.Status.READY
+    ).select_related('visit', 'visit__patient', 'prescribed_by')
+    
+    context = {
+        'pending_prescriptions': pending_prescriptions,
+        'title': 'Pending Medicine Payments'
+    }
+    return render(request, 'billing/pending_medicine_payments.html', context)
+
+@login_required
 def process_medicine_payment(request, prescription_id):
+    """Process payment for dispensed medicines"""
     prescription = get_object_or_404(Prescription, prescription_id=prescription_id)
     
     if request.user.role not in ['CASHIER', 'RECEPTIONIST', 'ADMIN']:
         messages.error(request, "You don't have permission to process payments.")
         return redirect('dashboard')
     
+    # Check if payment already exists and is completed
+    existing_payment = Payment.objects.filter(
+        prescription=prescription,
+        payment_type=Payment.PaymentType.MEDICINE,
+        status=Payment.Status.COMPLETED
+    ).first()
+    
+    if existing_payment:
+        messages.info(request, 'Payment for this prescription has already been processed.')
+        return redirect('payment_detail', payment_id=existing_payment.payment_id)
+    
     if request.method == 'POST':
-        form = MedicinePaymentForm(request.POST)
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    # Create payment
-                    payment = Payment(
-                        payment_id=f"PAY{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}",
-                        patient=prescription.visit.patient,
-                        visit=prescription.visit,
-                        payment_type=Payment.PaymentType.MEDICINE,
-                        payment_method=form.cleaned_data['payment_method'],
-                        amount=prescription.total_cost,
-                        prescription=prescription,
-                        processed_by=request.user,
-                        notes=form.cleaned_data['notes'],
-                        status=Payment.Status.COMPLETED,
-                        completed_at=timezone.now(),
-                        receipt_number=f"RCP{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}"
-                    )
-                    payment.save()
-                    
-                    # Update prescription status
-                    prescription.status = Prescription.Status.DISPENSED
-                    prescription.dispensed_at = timezone.now()
-                    prescription.save()
-                    
-                    # Update visit status
-                    prescription.visit.status = Visit.Status.MEDICINE_DISPENSED
-                    prescription.visit.save()
-                    
-                    messages.success(request, f'Payment of {prescription.total_cost} ETB processed successfully. Medicines dispensed.')
-                    return redirect('payment_detail', payment_id=payment.payment_id)
-                    
-            except Exception as e:
-                messages.error(request, f'Error processing payment: {str(e)}')
-    else:
-        form = MedicinePaymentForm()
+        payment_method = request.POST.get('payment_method', 'CASH')
+        
+        try:
+            with transaction.atomic():
+                # Create payment
+                payment = Payment(
+                    payment_id=f"PAY{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}",
+                    patient=prescription.visit.patient,
+                    visit=prescription.visit,
+                    payment_type=Payment.PaymentType.MEDICINE,
+                    payment_method=payment_method,
+                    amount=prescription.total_cost,
+                    prescription=prescription,
+                    processed_by=request.user,
+                    status=Payment.Status.COMPLETED,
+                    completed_at=timezone.now(),
+                    receipt_number=f"RCP{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}"
+                )
+                payment.save()
+                
+                # Update visit status to completed
+                prescription.visit.status = 'COMPLETED'
+                prescription.visit.completion_time = timezone.now()
+                prescription.visit.save()
+                
+                messages.success(request, f'Medicine payment of {prescription.total_cost} ETB processed successfully. Visit completed.')
+                return redirect('payment_detail', payment_id=payment.payment_id)
+                
+        except Exception as e:
+            messages.error(request, f'Error processing payment: {str(e)}')
     
     context = {
-        'form': form,
         'prescription': prescription,
     }
     return render(request, 'billing/process_medicine_payment.html', context)
@@ -168,6 +190,7 @@ def process_medicine_payment(request, prescription_id):
 def payment_list(request):
     form = PaymentSearchForm(request.GET or None)
     payments = Payment.objects.all().order_by('-created_at')
+    
     if form.is_valid():
         if form.cleaned_data['patient_id']:
             payments = payments.filter(patient__patient_id__icontains=form.cleaned_data['patient_id'])
@@ -177,22 +200,27 @@ def payment_list(request):
             payments = payments.filter(created_at__date__gte=form.cleaned_data['date_from'])
         if form.cleaned_data['date_to']:
             payments = payments.filter(created_at__date__lte=form.cleaned_data['date_to'])
-
-    total_pending = 0
-    pay_pending = Payment.objects.filter(status='PENDING').values_list('amount', flat=True)
-    for total_pend in pay_pending:
-        total_pending = total_pending + total_pend
-    total_paid = 0
-
-    pay_complete = Payment.objects.filter(status='COMPLETED').values_list('amount', flat=True)
-    for total_complete in pay_complete:
-        total_paid = total_paid + total_complete
+    
+    # Calculate totals
+    total_completed = payments.filter(status=Payment.Status.COMPLETED).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    total_pending = payments.filter(status=Payment.Status.PENDING).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # Get pending prescriptions count for the badge
+    pending_prescriptions_count = Prescription.objects.filter(
+        status=Prescription.Status.READY
+    ).count()
 
     context = {
         'payments': payments,
         'form': form,
-        'total_paid': total_paid,
+        'total_paid': total_completed,
         'total_pending': total_pending,
+        'pending_prescriptions_count': pending_prescriptions_count,
     }
     return render(request, 'billing/payment_list.html', context)
 

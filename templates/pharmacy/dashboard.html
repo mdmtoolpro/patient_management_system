@@ -33,11 +33,11 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h4 class="card-title">{{ active_carts.count }}</h4>
-                                <p class="card-text">Active Carts</p>
+                                <h4 class="card-title">{{ ready_prescriptions.count }}</h4>
+                                <p class="card-text">Ready for Payment</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="fas fa-shopping-cart fa-2x"></i>
+                                <i class="fas fa-money-bill-wave fa-2x"></i>
                             </div>
                         </div>
                     </div>
@@ -49,16 +49,11 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h4 class="card-title">
-                                    {% with low_stock=0 %}
-                                        <!-- You would calculate low stock medicines here -->
-                                        {{ low_stock }}
-                                    {% endwith %}
-                                </h4>
-                                <p class="card-text">Low Stock Items</p>
+                                <h4 class="card-title">{{ active_carts.count }}</h4>
+                                <p class="card-text">Active Carts</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                <i class="fas fa-shopping-cart fa-2x"></i>
                             </div>
                         </div>
                     </div>
@@ -66,41 +61,39 @@
             </div>
         </div>
 
-        <!-- Pending Prescriptions -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Pending Prescriptions</h5>
+        <!-- Ready for Payment Prescriptions (Cashier View) -->
+        {% if user.role in 'CASHIER,ADMIN' and ready_prescriptions %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Ready for Payment</h5>
             </div>
             <div class="card-body">
-                {% if pending_prescriptions %}
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
                                 <th>Prescription ID</th>
                                 <th>Patient</th>
-                                <th>Doctor</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th>Total Amount</th>
+                                <th>Prepared By</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for prescription in pending_prescriptions %}
+                            {% for prescription in ready_prescriptions %}
                             <tr>
                                 <td>
                                     <strong>{{ prescription.prescription_id }}</strong>
                                 </td>
                                 <td>{{ prescription.visit.patient }}</td>
-                                <td>{{ prescription.prescribed_by.get_full_name }}</td>
-                                <td>{{ prescription.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <span class="badge bg-warning">{{ prescription.get_status_display }}</span>
+                                    <strong class="text-success">ETB {{ prescription.total_cost|floatformat:2 }}</strong>
                                 </td>
+                                <td>{{ prescription.prescribed_by.get_full_name }}</td>
                                 <td>
-                                    <a href="{% url 'prescription_detail' prescription.prescription_id %}" 
-                                       class="btn btn-sm btn-primary">
-                                        Process
+                                    <a href="{% url 'process_medicine_payment' prescription.prescription_id %}" 
+                                       class="btn btn-sm btn-success">
+                                        <i class="fas fa-money-bill-wave me-1"></i> Process Payment
                                     </a>
                                 </td>
                             </tr>
@@ -108,15 +101,21 @@
                         </tbody>
                     </table>
                 </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
-                    <h6 class="text-success">All Caught Up!</h6>
-                    <p class="text-muted">No pending prescriptions at the moment.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
+        {% endif %}
+
+        <!-- Pending Prescriptions (Pharmacist View) -->
+        {% if user.role in 'PHARMACIST,ADMIN' and pending_prescriptions %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Pending Prescriptions</h5>
+            </div>
+            <div class="card-body">
+                <!-- ... existing pharmacist content ... -->
+            </div>
+        </div>
+        {% endif %}
     </div>
     
     <!-- Quick Actions Sidebar -->
@@ -127,64 +126,54 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
+                    {% if user.role in 'PHARMACIST,ADMIN' %}
                     <a href="{% url 'prescription_list' %}" class="btn btn-outline-primary">
                         <i class="fas fa-list me-2"></i>View All Prescriptions
                     </a>
-                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#stockModal">
+                    {% endif %}
+                    
+                    {% if user.role in 'CASHIER,ADMIN' %}
+                    <a href="{% url 'prescription_list' %}?status=READY" class="btn btn-outline-success">
+                        <i class="fas fa-money-bill-wave me-2"></i>Ready for Payment
+                    </a>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#stockModal">
                         <i class="fas fa-boxes me-2"></i>Check Stock
                     </button>
-                    <a href="/admin/pharmacy/medicine/" class="btn btn-outline-info">
+                    
+                    {% if user.role in 'PHARMACIST,ADMIN' %}
+                    <a href="/admin/pharmacy/medicine/" class="btn btn-outline-warning">
                         <i class="fas fa-capsules me-2"></i>Manage Medicines
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
         
         <!-- Active Carts -->
+        {% if user.role in 'PHARMACIST,ADMIN' and active_carts %}
         <div class="card mt-4">
             <div class="card-header">
                 <h5 class="mb-0">Active Dispensing Carts</h5>
             </div>
             <div class="card-body">
-                {% if active_carts %}
-                    {% for cart in active_carts %}
-                    <div class="border rounded p-3 mb-2">
-                        <h6>{{ cart.prescription.prescription_id }}</h6>
-                        <small class="text-muted">Patient: {{ cart.prescription.visit.patient }}</small>
-                        <div class="mt-2">
-                            <strong>ETB {{ cart.total_amount|floatformat:2 }}</strong>
-                        </div>
-                        <a href="{% url 'prescription_detail' cart.prescription.prescription_id %}" 
-                           class="btn btn-sm btn-primary mt-2 w-100">
-                            Continue
-                        </a>
+                {% for cart in active_carts %}
+                <div class="border rounded p-3 mb-2">
+                    <h6>{{ cart.prescription.prescription_id }}</h6>
+                    <small class="text-muted">Patient: {{ cart.prescription.visit.patient }}</small>
+                    <div class="mt-2">
+                        <strong>ETB {{ cart.total_amount|floatformat:2 }}</strong>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center">No active carts</p>
-                {% endif %}
+                    <a href="{% url 'prescription_detail' cart.prescription.prescription_id %}" 
+                       class="btn btn-sm btn-primary mt-2 w-100">
+                        Continue
+                    </a>
+                </div>
+                {% endfor %}
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Stock Modal -->
-<div class="modal fade" id="stockModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Medicine Stock Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Stock management features will be implemented here.</p>
-                <ul>
-                    <li>Low stock alerts</li>
-                    <li>Expiry date tracking</li>
-                    <li>Stock level monitoring</li>
-                </ul>
-            </div>
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Process Medicine Payment - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-pills me-2"></i>
+                    Process Medicine Payment
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Prescription Information -->
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">Prescription Details</h5>
+                    <hr>
+                    <p><strong>Prescription ID:</strong> {{ prescription.prescription_id }}</p>
+                    <p><strong>Patient:</strong> {{ prescription.visit.patient }}</p>
+                    <p><strong>Doctor:</strong> {{ prescription.prescribed_by.get_full_name }}</p>
+                    <p><strong>Visit ID:</strong> {{ prescription.visit.visit_id }}</p>
+                </div>
+
+                <!-- Medicine Details -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Medicines Dispensed</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Medicine</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in prescription.items.all %}
+                                    <tr>
+                                        <td>{{ item.medicine.name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>ETB {{ item.unit_price|floatformat:2 }}</td>
+                                        <td>ETB {{ item.total_price|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-success">
+                                        <td colspan="3" class="text-end"><strong>Total Amount:</strong></td>
+                                        <td><strong>ETB {{ prescription.total_cost|floatformat:2 }}</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Form -->
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Payment Method</strong></label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="payment_method" id="cash" value="CASH" checked>
+                                <label class="form-check-label" for="cash">
+                                    <i class="fas fa-money-bill me-1"></i> Cash
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="payment_method" id="card" value="CARD">
+                                <label class="form-check-label" for="card">
+                                    <i class="fas fa-credit-card me-1"></i> Card
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="payment_method" id="mobile" value="MOBILE">
+                                <label class="form-check-label" for="mobile">
+                                    <i class="fas fa-mobile-alt me-1"></i> Mobile Money
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Confirm Payment:</strong> This will complete the patient visit and generate a receipt.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Confirm Payment - ETB {{ prescription.total_cost|floatformat:2 }}
+                        </button>
+                        <a href="{% url 'pending_medicine_payments' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

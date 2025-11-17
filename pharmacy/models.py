@@ -67,15 +67,38 @@ class PrescriptionItem(models.Model):
         unique_together = ['prescription', 'medicine']
 
 class DispenseCart(models.Model):
-    pharmacist = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': User.Role.PHARMACIST})
+    pharmacist = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        limit_choices_to={'role': User.Role.PHARMACIST},
+        related_name='dispense_carts'
+    )
     prescription = models.OneToOneField(Prescription, on_delete=models.CASCADE)
     items = models.ManyToManyField(PrescriptionItem, through='CartItem')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"Cart for {self.prescription.prescription_id}"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['pharmacist', 'prescription'],
+                condition=models.Q(is_active=True),
+                name='unique_active_cart_per_pharmacist_prescription'
+            )
+        ]
+
 class CartItem(models.Model):
     cart = models.ForeignKey(DispenseCart, on_delete=models.CASCADE)
     prescription_item = models.ForeignKey(PrescriptionItem, on_delete=models.CASCADE)
     quantity_to_dispense = models.IntegerField()
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.prescription_item.medicine.name} in cart"
+
+    class Meta:
+        unique_together = ['cart', 'prescription_item']

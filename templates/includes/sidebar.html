@@ -94,7 +94,17 @@
                     <a class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'payment_list' %}">
                         <i class="fas fa-money-bill-wave"></i>
-                        Payments
+                        All Payments
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'pending_medicine_payments' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'pending_medicine_payments' %}">
+                        <i class="fas fa-pills"></i>
+                        Pending Medicine
+                        {% if pending_prescriptions_count > 0 %}
+                        <span class="badge bg-warning float-end">{{ pending_prescriptions_count }}</span>
+                        {% endif %}
                     </a>
                 </li>
                 <li class="nav-item">

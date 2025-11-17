@@ -10,6 +10,14 @@
         Payment Management
     </h2>
     <div class="btn-group">
+        <a href="{% url 'pending_medicine_payments' %}" class="btn btn-warning position-relative">
+            <i class="fas fa-pills me-1"></i> Pending Medicine
+            {% if pending_prescriptions_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ pending_prescriptions_count }}
+            </span>
+            {% endif %}
+        </a>
         <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
             <i class="fas fa-filter me-1"></i> Filter
         </button>
