@@ -5,9 +5,13 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 from django.utils import timezone
+from django.db import transaction
 from .models import Medicine, Prescription, PrescriptionItem, DispenseCart, CartItem
 from core.models import Notification
 from users.models import User
+from billing.models import Payment
+from patients.models import Patient, Visit
+import random
 
 @login_required
 def pharmacy_dashboard(request):
@@ -176,47 +180,69 @@ def add_to_cart(request):
 
 @login_required
 def dispense_medicines(request, prescription_id):
+    """Pharmacist dispenses medicines and creates payment record"""
+    if request.user.role != 'PHARMACIST':
+        return JsonResponse({'status': 'error', 'message': 'Only pharmacists can dispense medicines'})
+    
+    prescription = get_object_or_404(Prescription, prescription_id=prescription_id)
+    
     if request.method == 'POST':
-        prescription = get_object_or_404(Prescription, prescription_id=prescription_id)
-        
         try:
-            # Update prescription status
-            prescription.status = Prescription.Status.DISPENSED
-            prescription.dispensed_at = timezone.now()
-            prescription.save()
-            
-            # Update medicine stock
-            for item in prescription.items.all():
-                medicine = item.medicine
-                if medicine.quantity_in_stock >= item.quantity:
-                    medicine.quantity_in_stock -= item.quantity
-                    medicine.save()
-                else:
-                    return JsonResponse({
-                        'status': 'error', 
-                        'message': f'Insufficient stock for {medicine.name}'
-                    })
-            
-            # Deactivate cart
-            DispenseCart.objects.filter(
-                pharmacist=request.user,
-                prescription=prescription,
-                is_active=True
-            ).update(is_active=False)
-            
-            # Create notification for cashier
-            cashiers = User.objects.filter(role='CASHIER', is_active=True)
-            for cashier in cashiers:
-                Notification.objects.create(
-                    recipient=cashier,
-                    notification_type=Notification.NotificationType.PAYMENT,
-                    title='Medicine Payment Required',
-                    message=f'Patient {prescription.visit.patient} needs to pay ETB {prescription.total_cost} for medicines',
-                    related_object_id=prescription.prescription_id
+            with transaction.atomic():
+                # Calculate total cost from prescription items
+                total_cost = sum(item.total_price for item in prescription.items.all())
+                
+                # Update prescription status to READY (waiting for payment)
+                prescription.status = Prescription.Status.READY
+                prescription.total_cost = total_cost
+                prescription.reviewed_at = timezone.now()
+                prescription.save()
+                
+                # Create pending payment record
+                payment = Payment(
+                    payment_id=f"PAY{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}",
+                    patient=prescription.visit.patient,
+                    visit=prescription.visit,
+                    payment_type=Payment.PaymentType.MEDICINE,
+                    payment_method=Payment.PaymentMethod.PENDING,  # Will be set by cashier
+                    amount=total_cost,
+                    prescription=prescription,
+                    processed_by=request.user,  # Pharmacist who dispensed
+                    status=Payment.Status.PENDING,  # Waiting for cashier
+                    notes=f'Medicine payment for prescription {prescription.prescription_id}',
+                    receipt_number=f"RCP{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}"
                 )
-            
-            return JsonResponse({'status': 'success', 'message': 'Medicines dispensed successfully'})
-            
+                payment.save()
+                
+                # Update visit status
+                prescription.visit.status = Visit.Status.PRESCRIPTION_READY
+                prescription.visit.prescription_time = timezone.now()
+                prescription.visit.save()
+                
+                # Create notification for cashier
+                cashiers = User.objects.filter(role=User.Role.CASHIER, is_active=True)
+                for cashier in cashiers:
+                    Notification.objects.create(
+                        recipient=cashier,
+                        notification_type=Notification.NotificationType.PAYMENT,
+                        title='Medicine Payment Required',
+                        message=f'Patient {prescription.visit.patient} needs to pay ETB {total_cost} for medicines',
+                        related_object_id=prescription.prescription_id
+                    )
+                
+                # Deactivate cart
+                DispenseCart.objects.filter(
+                    pharmacist=request.user,
+                    prescription=prescription,
+                    is_active=True
+                ).update(is_active=False)
+                
+                return JsonResponse({
+                    'status': 'success', 
+                    'message': f'Medicines dispensed successfully. Patient needs to pay ETB {total_cost}',
+                    'total_cost': float(total_cost)
+                })
+                
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
 

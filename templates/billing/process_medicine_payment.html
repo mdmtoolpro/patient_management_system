@@ -19,14 +19,14 @@
                     <hr>
                     <p><strong>Prescription ID:</strong> {{ prescription.prescription_id }}</p>
                     <p><strong>Patient:</strong> {{ prescription.visit.patient }}</p>
-                    <p><strong>Doctor:</strong> {{ prescription.prescribed_by.get_full_name }}</p>
-                    <p><strong>Visit ID:</strong> {{ prescription.visit.visit_id }}</p>
+                    <p><strong>Doctor:</strong> Dr. {{ prescription.prescribed_by.get_full_name }}</p>
+                    <p><strong>Total Amount:</strong> <span class="text-success fw-bold">ETB {{ payment.amount|floatformat:2 }}</span></p>
                 </div>
 
                 <!-- Medicine Details -->
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h6 class="mb-0">Medicines Dispensed</h6>
+                        <h6 class="mb-0">Prescribed Medicines</h6>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -35,7 +35,7 @@
                                     <tr>
                                         <th>Medicine</th>
                                         <th>Quantity</th>
-                                        <th>Unit Price</th>
+                                        <th>Price</th>
                                         <th>Total</th>
                                     </tr>
                                 </thead>
@@ -51,8 +51,8 @@
                                 </tbody>
                                 <tfoot>
                                     <tr class="table-success">
-                                        <td colspan="3" class="text-end"><strong>Total Amount:</strong></td>
-                                        <td><strong>ETB {{ prescription.total_cost|floatformat:2 }}</strong></td>
+                                        <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
+                                        <td><strong>ETB {{ payment.amount|floatformat:2 }}</strong></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -90,7 +90,7 @@
 
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Confirm Payment:</strong> This will complete the patient visit and generate a receipt.
+                        <strong>Confirm Payment:</strong> This will complete the patient's treatment process.
                     </div>
 
                     <div class="d-grid gap-2">
@@ -98,7 +98,7 @@
                             <i class="fas fa-check-circle me-2"></i>
                             Confirm Payment - ETB {{ prescription.total_cost|floatformat:2 }}
                         </button>
-                        <a href="{% url 'pending_medicine_payments' %}" class="btn btn-secondary">
+                        <a href="{% url 'payment_list' %}" class="btn btn-secondary">
                             <i class="fas fa-times me-2"></i>
                             Cancel
                         </a>

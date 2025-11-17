@@ -126,74 +126,208 @@
                 {% endif %}
             </div>
         </div>
+    </div>
+        <!-- Lab Tests and Medicine Orders Side by Side -->
+        <div class="row">
+            <!-- Laboratory Tests - Left Side -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Laboratory Tests</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if lab_requests %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Test ID</th>
+                                        <th>Test Type</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lab_request in lab_requests %}
+                                    <tr>
+                                        <td>{{ lab_request.request_id }}</td>
+                                        <td>{{ lab_request.test_type.name }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if lab_request.status == 'COMPLETED' %}bg-success
+                                                {% elif lab_request.status == 'IN_PROGRESS' %}bg-info
+                                                {% elif lab_request.status == 'PAYMENT_PENDING' %}bg-warning
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ lab_request.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if lab_request.status == 'PAYMENT_PENDING' and user.role == 'CASHIER' %}
+                                            <a href="{% url 'process_lab_payment' lab_request.request_id %}" 
+                                               class="btn btn-sm btn-success">
+                                                Pay
+                                            </a>
+                                            {% endif %}
 
-        <!-- Lab Tests -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Laboratory Tests</h5>
+                                            {% if lab_request.status == 'COMPLETED' and user.role == 'DOCTOR' %}
+                                            <a href="{% url 'lab_result_detail' lab_request.request_id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                View
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-flask fa-2x text-muted mb-3"></i>
+                            <h6 class="text-muted">No Lab Tests</h6>
+                            <p class="text-muted">No laboratory tests requested.</p>
+                            {% if user.role == 'DOCTOR' %}
+                            <a href="{% url 'request_lab_test' visit.visit_id %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i> Request Test
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                {% if lab_requests %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Test ID</th>
-                                <th>Test Type</th>
-                                <th>Status</th>
-                                <th>Requested</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for lab_request in lab_requests %}
-                            <tr>
-                                <td>{{ lab_request.request_id }}</td>
-                                <td>{{ lab_request.test_type.name }}</td>
-                                <td>
-                                    <span class="badge 
-                                        {% if lab_request.status == 'COMPLETED' %}bg-success
-                                        {% elif lab_request.status == 'IN_PROGRESS' %}bg-info
-                                        {% elif lab_request.status == 'PAYMENT_PENDING' %}bg-warning
-                                        {% else %}bg-secondary{% endif %}">
-                                        {{ lab_request.get_status_display }}
-                                    </span>
-                                </td>
-                                <td>{{ lab_request.requested_at|date:"M d, Y" }}</td>
-                                <td>
-                                    {% if lab_request.status == 'PAYMENT_PENDING' and user.role == 'CASHIER' %}
-                                    <a href="{% url 'process_lab_payment' lab_request.request_id %}" 
-                                       class="btn btn-sm btn-success">
-                                        Process Payment
-                                    </a>
-                                    {% endif %}
 
-                                    {% if lab_request.status == 'COMPLETED' and user.role == 'DOCTOR' %}
-                                    <a href="{% url 'lab_result_detail' lab_request.request_id %}" 
-                                       class="btn btn-sm btn-outline-primary">
-                                        View Result
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Medicine Orders - Right Side -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Medicine Orders</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if visit.prescription %}
+                            {% with prescription=visit.prescription %}
+                            <div class="alert 
+                                {% if prescription.status == 'DISPENSED' %}alert-success
+                                {% elif prescription.status == 'READY' %}alert-info
+                                {% elif prescription.status == 'UNDER_REVIEW' %}alert-warning
+                                {% else %}alert-secondary{% endif %}">
+                                <strong>Prescription ID:</strong> {{ prescription.prescription_id }}
+                                <br>
+                                <strong>Status:</strong> 
+                                <span class="badge 
+                                    {% if prescription.status == 'DISPENSED' %}bg-success
+                                    {% elif prescription.status == 'READY' %}bg-info
+                                    {% elif prescription.status == 'UNDER_REVIEW' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ prescription.get_status_display }}
+                                </span>
+                                {% if prescription.total_cost > 0 %}
+                                <br>
+                                <strong>Total Cost:</strong> ETB {{ prescription.total_cost|floatformat:2 }}
+                                {% endif %}
+                            </div>
+
+                            <!-- Prescription Actions -->
+                            <div class="d-grid gap-2 mb-3">
+                                {% if prescription.status == 'PENDING' and user.role == 'PHARMACIST' %}
+                                <a href="{% url 'prescription_detail' prescription.prescription_id %}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-pills me-1"></i> Process
+                                </a>
+                                {% endif %}
+                                
+                                {% if prescription.status == 'READY' and user.role == 'CASHIER' %}
+                                <a href="{% url 'process_medicine_payment' prescription.prescription_id %}" 
+                                   class="btn btn-success btn-sm">
+                                    <i class="fas fa-money-bill-wave me-1"></i> Process Payment
+                                </a>
+                                {% endif %}
+                            </div>
+
+                            <!-- Prescription Items Summary -->
+                            {% if prescription.items.exists %}
+                            <h6 class="mt-3 mb-2">Medicines:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Medicine</th>
+                                            <th>Qty</th>
+                                            <th>Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in prescription.items.all %}
+                                        <tr>
+                                            <td>
+                                                <small><strong>{{ item.medicine.name }}</strong></small>
+                                            </td>
+                                            <td>{{ item.quantity }}</td>
+                                            <td>ETB {{ item.total_price|floatformat:2 }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                <tr class="table-primary">
+                                    <td colspan="2" class="text-end"><strong>Grand Total:</strong></td>
+                                    <td><strong>ETB {{ prescription.total_cost|floatformat:2 }}</strong></td>
+                                </tr>
+                            </tfoot>
+                                </table>
+                            </div>
+
+                            <!-- Payment Status -->
+                            {% with medicine_payment=prescription.payment_set.first %}
+                                {% if medicine_payment %}
+                                <div class="alert alert-success mt-3">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    <small>Payment Completed</small><br>
+                                        <small>
+                                        Paid: ETB {{ medicine_payment.amount|floatformat:2 }} 
+                                        via {{ medicine_payment.get_payment_method_display }}
+                                        on {{ medicine_payment.completed_at|date:"M d, Y H:i" }}
+                                    </small>
+                                </div>
+                                {% elif prescription.status == 'READY' %}
+                                <div class="alert alert-warning mt-3">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <small>Payment Required</small>
+                                </div>
+                                {% endif %}
+                            {% endwith %}
+
+                            {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-prescription fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No medicines prescribed</p>
+                            </div>
+                            {% endif %}
+
+                            {% if prescription.status == 'DISPENSED' %}
+                            <div class="alert alert-success mt-3">
+                                <i class="fas fa-check-double me-1"></i>
+                                <small>Medicines Dispensed</small><br>
+                                <small>Completed on {{ prescription.dispensed_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                            {% endif %}
+
+                            {% endwith %}
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-prescription-bottle fa-2x text-muted mb-3"></i>
+                            <h6 class="text-muted">No Medicine Orders</h6>
+                            <p class="text-muted">No prescription created yet.</p>
+                            {% if user.role == 'DOCTOR' and visit.status == 'WITH_DOCTOR_REVIEW' %}
+                            <a href="#" class="btn btn-primary btn-sm">
+                                <i class="fas fa-prescription me-1"></i> Create Prescription
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-flask fa-2x text-muted mb-3"></i>
-                    <h6 class="text-muted">No Lab Tests</h6>
-                    <p class="text-muted">No laboratory tests have been requested for this visit.</p>
-                    {% if user.role == 'DOCTOR' %}
-                    <a href="{% url 'request_lab_test' visit.visit_id %}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i> Request Lab Test
-                    </a>
-                    {% endif %}
-                </div>
-                {% endif %}
             </div>
         </div>
-    </div>
+    
 </div>
 {% endblock %}

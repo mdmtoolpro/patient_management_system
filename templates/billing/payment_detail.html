@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Details - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>
+                        Payment Receipt
+                    </h4>
+                    <span class="badge bg-light text-dark fs-6">{{ payment.receipt_number }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Clinic Header -->
+                <div class="text-center mb-4 border-bottom pb-3">
+                    <h3 class="text-primary">{{ clinic_name }}</h3>
+                    <p class="text-muted mb-1">{{ clinic_address }}</p>
+                    <p class="text-muted mb-1">Tel: {{ clinic_phone }} | Email: {{ clinic_email }}</p>
+                </div>
+
+                <!-- Payment Information -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="text-primary">Payment Information</h5>
+                        <table class="table table-borderless">
+                            <tr>
+                                <th>Payment ID:</th>
+                                <td><strong>{{ payment.payment_id }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Receipt No:</th>
+                                <td>{{ payment.receipt_number }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date & Time:</th>
+                                <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Payment Type:</th>
+                                <td>
+                                    <span class="badge 
+                                        {% if payment.payment_type == 'REGISTRATION' %}bg-primary
+                                        {% elif payment.payment_type == 'LAB_TEST' %}bg-info
+                                        {% elif payment.payment_type == 'MEDICINE' %}bg-success
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ payment.get_payment_type_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Payment Method:</th>
+                                <td>
+                                    <span class="badge bg-dark">
+                                        {{ payment.get_payment_method_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Status:</th>
+                                <td>
+                                    <span class="badge 
+                                        {% if payment.status == 'COMPLETED' %}bg-success
+                                        {% elif payment.status == 'PENDING' %}bg-warning
+                                        {% else %}bg-danger{% endif %}">
+                                        {{ payment.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="text-primary">Patient Information</h5>
+                        <table class="table table-borderless">
+                            <tr>
+                                <th>Patient:</th>
+                                <td>{{ payment.patient }}</td>
+                            </tr>
+                            <tr>
+                                <th>Patient ID:</th>
+                                <td>{{ payment.patient.patient_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Phone:</th>
+                                <td>{{ payment.patient.phone }}</td>
+                            </tr>
+                            {% if payment.visit %}
+                            <tr>
+                                <th>Visit ID:</th>
+                                <td>{{ payment.visit.visit_id }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payment Details -->
+                <div class="border rounded p-3 mb-4">
+                    <h5 class="text-primary mb-3">Payment Details</h5>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <strong>Description</strong>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <strong>Amount (ETB)</strong>
+                        </div>
+                    </div>
+                    <hr>
+                    
+                    <div class="row mb-2">
+                        <div class="col-md-8">
+                            {% if payment.payment_type == 'REGISTRATION' %}
+                            Patient Registration Fee
+                            {% elif payment.payment_type == 'LAB_TEST' and payment.lab_request %}
+                            Laboratory Test: {{ payment.lab_request.test_type.name }}
+                            {% elif payment.payment_type == 'MEDICINE' and payment.prescription %}
+                            Medicine Prescription
+                            {% else %}
+                            {{ payment.get_payment_type_display }}
+                            {% endif %}
+                            
+                            {% if payment.lab_request %}
+                            <br>
+                            <small class="text-muted">
+                                Request ID: {{ payment.lab_request.request_id }}
+                            </small>
+                            {% endif %}
+                            
+                            {% if payment.prescription %}
+                            <br>
+                            <small class="text-muted">
+                                Prescription ID: {{ payment.prescription.prescription_id }}
+                            </small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-end">
+                            ETB {{ payment.amount|floatformat:2 }}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="row fw-bold fs-5">
+                        <div class="col-md-8">Total Amount</div>
+                        <div class="col-md-4 text-end text-success">
+                            ETB {{ payment.amount|floatformat:2 }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                {% if payment.notes %}
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">Additional Notes:</h6>
+                    {{ payment.notes }}
+                </div>
+                {% endif %}
+
+                <!-- Processing Information -->
+                <div class="row text-muted small">
+                    <div class="col-md-6">
+                        <strong>Processed By:</strong><br>
+                        {{ payment.processed_by.get_full_name }}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <strong>Completed At:</strong><br>
+                        {% if payment.completed_at %}
+                        {{ payment.completed_at|date:"M d, Y H:i" }}
+                        {% else %}
+                        Pending
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-4 border-top pt-3">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'payment_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Payments
+                        </a>
+                        <div class="btn-group">
+                            <button onclick="window.print()" class="btn btn-outline-primary">
+                                <i class="fas fa-print me-2"></i> Print Receipt
+                            </button>
+                            <a href="#" class="btn btn-success" id="downloadReceipt">
+                                <i class="fas fa-download me-2"></i> Download PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // PDF download functionality (placeholder)
+    document.getElementById('downloadReceipt').addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('PDF download functionality will be implemented soon!');
+    });
+    
+    // Auto-print option (optional)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('print') === 'true') {
+        window.print();
+    }
+});
+</script>
+
+<style>
+@media print {
+    .btn, .navbar, .sidebar, .footer {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+}
+</style>
+{% endblock %}

@@ -11,6 +11,7 @@ from laboratory.models import LabTestRequest
 from pharmacy.models import Prescription
 from core.models import Notification
 from users.models import User
+from patients.models import Patient, Visit
 import random
 
 @login_required
@@ -113,7 +114,7 @@ def assign_lab_request(request, request_id):
 
 @login_required
 def pending_medicine_payments(request):
-    """View for pending medicine payments"""
+    """View for pending medicine payments (for cashiers)"""
     if request.user.role not in ['CASHIER', 'RECEPTIONIST', 'ADMIN']:
         messages.error(request, "You don't have permission to view pending payments.")
         return redirect('dashboard')
@@ -123,67 +124,125 @@ def pending_medicine_payments(request):
         status=Prescription.Status.READY
     ).select_related('visit', 'visit__patient', 'prescribed_by')
     
+    # Check if payments already exist for these prescriptions
+    paid_prescription_ids = Payment.objects.filter(
+        payment_type=Payment.PaymentType.MEDICINE,
+        status=Payment.Status.COMPLETED
+    ).values_list('prescription_id', flat=True)
+    
+    # Exclude already paid prescriptions
+    pending_prescriptions = pending_prescriptions.exclude(id__in=paid_prescription_ids)
+    
     context = {
         'pending_prescriptions': pending_prescriptions,
-        'title': 'Pending Medicine Payments'
     }
     return render(request, 'billing/pending_medicine_payments.html', context)
 
 @login_required
 def process_medicine_payment(request, prescription_id):
-    """Process payment for dispensed medicines"""
+    """Cashier processes medicine payment"""
     prescription = get_object_or_404(Prescription, prescription_id=prescription_id)
     
     if request.user.role not in ['CASHIER', 'RECEPTIONIST', 'ADMIN']:
         messages.error(request, "You don't have permission to process payments.")
-        return redirect('dashboard')
+        return redirect('payment_list')
     
-    # Check if payment already exists and is completed
-    existing_payment = Payment.objects.filter(
-        prescription=prescription,
-        payment_type=Payment.PaymentType.MEDICINE,
-        status=Payment.Status.COMPLETED
-    ).first()
+    print(f"DEBUG: Processing payment for prescription {prescription_id}")
+    print(f"DEBUG: Prescription status: {prescription.status}")
+    print(f"DEBUG: Prescription total cost: {prescription.total_cost}")
     
-    if existing_payment:
-        messages.info(request, 'Payment for this prescription has already been processed.')
-        return redirect('payment_detail', payment_id=existing_payment.payment_id)
+    # Get the pending payment for this prescription
+    try:
+        payment = Payment.objects.get(
+            prescription=prescription,
+            status=Payment.Status.PENDING,
+            payment_type=Payment.PaymentType.MEDICINE
+        )
+        print(f"DEBUG: Found pending payment: {payment.payment_id}")
+    except Payment.DoesNotExist:
+        print(f"DEBUG: No pending payment found, creating one...")
+        # Create a payment record if it doesn't exist
+        payment = Payment(
+            payment_id=f"PAY{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}",
+            patient=prescription.visit.patient,
+            visit=prescription.visit,
+            payment_type=Payment.PaymentType.MEDICINE,
+            payment_method='CASH',  # Default
+            amount=prescription.total_cost,
+            prescription=prescription,
+            processed_by=request.user,
+            status=Payment.Status.PENDING,
+            receipt_number=f"RCP{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}"
+        )
+        payment.save()
+        print(f"DEBUG: Created new payment: {payment.payment_id}")
     
     if request.method == 'POST':
         payment_method = request.POST.get('payment_method', 'CASH')
+        print(f"DEBUG: POST request received, payment method: {payment_method}")
         
         try:
             with transaction.atomic():
-                # Create payment
-                payment = Payment(
-                    payment_id=f"PAY{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}",
-                    patient=prescription.visit.patient,
-                    visit=prescription.visit,
-                    payment_type=Payment.PaymentType.MEDICINE,
-                    payment_method=payment_method,
-                    amount=prescription.total_cost,
-                    prescription=prescription,
-                    processed_by=request.user,
-                    status=Payment.Status.COMPLETED,
-                    completed_at=timezone.now(),
-                    receipt_number=f"RCP{timezone.now().strftime('%y%m%d')}{random.randint(1000, 9999)}"
-                )
-                payment.save()
+                print(f"DEBUG: Starting transaction...")
                 
-                # Update visit status to completed
-                prescription.visit.status = 'COMPLETED'
+                # Update payment record
+                payment.payment_method = payment_method
+                payment.status = Payment.Status.COMPLETED
+                payment.completed_at = timezone.now()
+                payment.processed_by = request.user
+                payment.save()
+                print(f"DEBUG: Payment updated to COMPLETED")
+                
+                # Update prescription status to DISPENSED
+                prescription.status = Prescription.Status.DISPENSED
+                prescription.dispensed_at = timezone.now()
+                prescription.save()
+                print(f"DEBUG: Prescription updated to DISPENSED")
+                
+                # Update medicine stock
+                for item in prescription.items.all():
+                    medicine = item.medicine
+                    print(f"DEBUG: Processing medicine {medicine.name}, stock: {medicine.quantity_in_stock}, needed: {item.quantity}")
+                    if medicine.quantity_in_stock >= item.quantity:
+                        medicine.quantity_in_stock -= item.quantity
+                        medicine.save()
+                        print(f"DEBUG: Updated stock for {medicine.name} to {medicine.quantity_in_stock}")
+                    else:
+                        error_msg = f'Insufficient stock for {medicine.name}'
+                        print(f"DEBUG: {error_msg}")
+                        messages.error(request, error_msg)
+                        return redirect('process_medicine_payment', prescription_id=prescription_id)
+                
+                # Update visit status to COMPLETED
+                prescription.visit.status = Visit.Status.COMPLETED
                 prescription.visit.completion_time = timezone.now()
                 prescription.visit.save()
+                print(f"DEBUG: Visit updated to COMPLETED")
                 
-                messages.success(request, f'Medicine payment of {prescription.total_cost} ETB processed successfully. Visit completed.')
+                # Create completion notification
+                Notification.objects.create(
+                    recipient=prescription.prescribed_by,
+                    notification_type=Notification.NotificationType.SYSTEM,
+                    title='Patient Treatment Completed',
+                    message=f'Patient {prescription.visit.patient} has completed treatment and paid for medicines',
+                    related_object_id=prescription.visit.visit_id
+                )
+                print(f"DEBUG: Notification created")
+                
+                messages.success(request, f'Payment of {payment.amount} ETB processed successfully. Treatment completed.')
+                print(f"DEBUG: Redirecting to payment detail")
                 return redirect('payment_detail', payment_id=payment.payment_id)
                 
         except Exception as e:
-            messages.error(request, f'Error processing payment: {str(e)}')
+            error_msg = f'Error processing payment: {str(e)}'
+            print(f"DEBUG: Exception: {error_msg}")
+            messages.error(request, error_msg)
     
     context = {
         'prescription': prescription,
+        'payment': payment,
     }
+    print(f"DEBUG: Rendering template with context")
     return render(request, 'billing/process_medicine_payment.html', context)
 
 @login_required
@@ -201,6 +260,10 @@ def payment_list(request):
         if form.cleaned_data['date_to']:
             payments = payments.filter(created_at__date__lte=form.cleaned_data['date_to'])
     
+    # Show pending medicine payments first for cashiers
+    if request.user.role in ['CASHIER', 'RECEPTIONIST']:
+        payments = payments.filter(status=Payment.Status.PENDING, payment_type=Payment.PaymentType.MEDICINE)
+    
     # Calculate totals
     total_completed = payments.filter(status=Payment.Status.COMPLETED).aggregate(
         total=Sum('amount')
@@ -210,17 +273,11 @@ def payment_list(request):
         total=Sum('amount')
     )['total'] or 0
     
-    # Get pending prescriptions count for the badge
-    pending_prescriptions_count = Prescription.objects.filter(
-        status=Prescription.Status.READY
-    ).count()
-
     context = {
         'payments': payments,
         'form': form,
-        'total_paid': total_completed,
+        'total_completed': total_completed,
         'total_pending': total_pending,
-        'pending_prescriptions_count': pending_prescriptions_count,
     }
     return render(request, 'billing/payment_list.html', context)
 

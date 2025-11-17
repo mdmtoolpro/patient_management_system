@@ -99,10 +99,27 @@
                         </td>
                         <td>{{ payment.created_at|date:"M d, Y" }}</td>
                         <td>{{ payment.processed_by.get_full_name }}</td>
+                        <!-- In the table actions column -->
                         <td>
-                            <a href="{% url 'payment_detail' payment.payment_id %}" class="btn btn-sm btn-outline-primary">
-                                View
-                            </a>
+                            <div class="btn-group btn-group-sm">
+                                {% if payment.status == 'PENDING' and payment.payment_type == 'MEDICINE' and user.role in 'CASHIER,RECEPTIONIST,ADMIN' %}
+                                <a href="{% url 'process_medicine_payment' payment.prescription.prescription_id %}" 
+                                   class="btn btn-success" title="Process Medicine Payment">
+                                    <i class="fas fa-pills"></i> Process
+                                </a>
+                                {% endif %}
+                                
+                                {% if payment.status == 'PENDING' and payment.payment_type == 'LAB_TEST' and user.role in 'CASHIER,RECEPTIONIST,ADMIN' %}
+                                <a href="{% url 'process_lab_payment' payment.lab_request.request_id %}" 
+                                   class="btn btn-info" title="Process Lab Payment">
+                                    <i class="fas fa-flask"></i> Process
+                                </a>
+                                {% endif %}
+                                
+                                <a href="{% url 'payment_detail' payment.payment_id %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

@@ -18,6 +18,7 @@ class Payment(models.Model):
         CARD = 'CARD', _('Card')
         MOBILE = 'MOBILE', _('Mobile Money')
         INSURANCE = 'INSURANCE', _('Insurance')
+        PENDING = 'PENDING', _('Pending')
     
     class Status(models.TextChoices):
         PENDING = 'PENDING', _('Pending')
