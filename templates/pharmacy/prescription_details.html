@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}Prescription {{ prescription.prescription_id }} - {{ clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-prescription me-2"></i>
+                Prescription Details
+            </h2>
+            <div class="btn-group">
+                <a href="{% url 'prescription_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back to List
+                </a>
+            </div>
+        </div>
+
+        <!-- Prescription Header -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Prescription Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th>Prescription ID:</th>
+                                <td><strong>{{ prescription.prescription_id }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Patient:</th>
+                                <td>{{ patient.first_name }} {{ patient.last_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Patient ID:</th>
+                                <td>{{ patient.patient_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Visit ID:</th>
+                                <td>{{ visit.visit_id }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th>Prescribed By:</th>
+                                <td>Dr. {{ prescription.prescribed_by.get_full_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Status:</th>
+                                <td>
+                                    <span class="badge 
+                                        {% if prescription.status == 'DISPENSED' %}bg-success
+                                        {% elif prescription.status == 'READY' %}bg-warning
+                                        {% elif prescription.status == 'PENDING' %}bg-info
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ prescription.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Date:</th>
+                                <td>{{ prescription.created_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Total Cost:</th>
+                                <td>
+                                    {% if prescription.total_cost %}
+                                    <strong class="text-success">ETB {{ prescription.total_cost|floatformat:2 }}</strong>
+                                    {% else %}
+                                    <span class="text-muted">Not calculated</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Diagnosis and Symptoms -->
+                {% if visit.diagnosis or visit.symptoms %}
+                <div class="row mt-3">
+                    {% if visit.symptoms %}
+                    <div class="col-md-6">
+                        <h6>Symptoms:</h6>
+                        <p class="text-muted">{{ visit.symptoms }}</p>
+                    </div>
+                    {% endif %}
+                    {% if visit.diagnosis %}
+                    <div class="col-md-6">
+                        <h6>Diagnosis:</h6>
+                        <p class="text-muted">{{ visit.diagnosis }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Doctor Notes -->
+                {% if prescription.notes %}
+                <div class="alert alert-info mt-3">
+                    <h6 class="alert-heading">Doctor's Notes:</h6>
+                    <p class="mb-0">{{ prescription.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Prescribed Medicines -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Prescribed Medicines</h5>
+            </div>
+            <div class="card-body">
+                {% if prescription_items %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Medicine</th>
+                                <th>Generic Name</th>
+                                <th>Quantity</th>
+                                <th>Dosage</th>
+                                <th>Duration</th>
+                                <th>Unit Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in prescription_items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.medicine.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ item.medicine.strength }}</small>
+                                </td>
+                                <td>{{ item.medicine.generic_name|default:"-" }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.dosage }}</td>
+                                <td>{{ item.duration }}</td>
+                                <td>ETB {{ item.unit_price|floatformat:2 }}</td>
+                                <td><strong>ETB {{ item.total_price|floatformat:2 }}</strong></td>
+                            </tr>
+                            {% if item.instructions %}
+                            <tr class="bg-light">
+                                <td colspan="7">
+                                    <small><strong>Instructions:</strong> {{ item.instructions }}</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-success">
+                                <td colspan="6" class="text-end"><strong>Total Cost:</strong></td>
+                                <td><strong>ETB {{ prescription.total_cost|floatformat:2 }}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-pills fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">No medicines prescribed</h6>
+                    <p class="text-muted">This prescription doesn't contain any medicines yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Actions -->
+    <div class="col-md-4">
+        <!-- Status Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Prescription Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item {% if prescription.created_at %}active{% endif %}">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h6>Prescribed</h6>
+                            <small class="text-muted">{{ prescription.created_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item {% if prescription.reviewed_at %}active{% endif %}">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h6>Pharmacy Review</h6>
+                            {% if prescription.reviewed_at %}
+                            <small class="text-muted">{{ prescription.reviewed_at|date:"M d, Y H:i" }}</small>
+                            {% else %}
+                            <small class="text-muted">Pending</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="timeline-item {% if prescription.dispensed_at %}active{% endif %}">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h6>Dispensed</h6>
+                            {% if prescription.dispensed_at %}
+                            <small class="text-muted">{{ prescription.dispensed_at|date:"M d, Y H:i" }}</small>
+                            {% else %}
+                            <small class="text-muted">Pending</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if prescription.status == 'PENDING' or prescription.status == 'READY' %}
+                    <a href="{% url 'prescription_detail' prescription.prescription_id %}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-cogs me-2"></i>Process Prescription
+                    </a>
+                    {% endif %}
+
+                    <button class="btn btn-outline-info" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Print Prescription
+                    </button>
+
+                    <a href="{% url 'prescription_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Information -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">Patient Information</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th>Name:</th>
+                        <td>{{ patient.first_name }} {{ patient.last_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Gender:</th>
+                        <td>{{ patient.get_gender_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Age:</th>
+                        <td>
+                            {% with age=patient.date_of_birth|timesince %}
+                                {{ age.split|first }} years
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ patient.phone }}</td>
+                    </tr>
+                    {% if patient.allergies %}
+                    <tr>
+                        <th>Allergies:</th>
+                        <td class="text-danger">{{ patient.allergies }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -20px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #dee2e6;
+    border: 2px solid #fff;
+}
+
+.timeline-item.active .timeline-marker {
+    background-color: #0d6efd;
+}
+
+.timeline-content {
+    margin-left: 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: -15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #dee2e6;
+}
+</style>
+{% endblock %}

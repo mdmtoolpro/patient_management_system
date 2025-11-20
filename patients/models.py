@@ -1,5 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from core.models import Notification
 from users.models import User
 
 class Patient(models.Model):
@@ -32,6 +35,7 @@ class Patient(models.Model):
     def __str__(self):
         return f"{self.patient_id} - {self.first_name} {self.last_name}"
 
+
 class Visit(models.Model):
     class Status(models.TextChoices):
         REGISTERED = 'REGISTERED', _('Registered')
@@ -61,6 +65,62 @@ class Visit(models.Model):
     completion_time = models.DateTimeField(null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.visit_id} - {self.patient}"
+
+    def save(self, *args, **kwargs):
+        # Check if this is a new visit or if doctor is being changed
+        is_new = self._state.adding
+        if not is_new:
+            old_visit = Visit.objects.get(pk=self.pk)
+            doctor_changed = old_visit.assigned_doctor != self.assigned_doctor
+            status_changed = old_visit.status != self.status
+        else:
+            doctor_changed = False
+            status_changed = False
+        
+        # Call the original save method
+        super().save(*args, **kwargs)
+        
+        # Create notifications after saving
+        if is_new:
+            self._notify_new_assignment()
+        elif doctor_changed:
+            self._notify_doctor_changed()
+        elif status_changed and self.status == self.Status.WITH_DOCTOR:
+            self._notify_ready_for_doctor()
+
+    def _notify_new_assignment(self):
+        """Notify doctor when a new patient is assigned to them"""
+        Notification.objects.create(
+            recipient=self.assigned_doctor,
+            notification_type=Notification.NotificationType.SYSTEM,
+            title='New Patient Assigned',
+            message=f'Patient {self.patient} has been assigned to you for consultation. Visit ID: {self.visit_id}',
+            related_object_id=self.visit_id
+        )
+
+    def _notify_doctor_changed(self):
+        """Notify both old and new doctors when assignment changes"""
+        # Notify new doctor
+        Notification.objects.create(
+            recipient=self.assigned_doctor,
+            notification_type=Notification.NotificationType.SYSTEM,
+            title='Patient Transferred to You',
+            message=f'Patient {self.patient} has been transferred to your care. Visit ID: {self.visit_id}',
+            related_object_id=self.visit_id
+        )
+
+    def _notify_ready_for_doctor(self):
+        """Notify doctor when patient is ready for consultation"""
+        Notification.objects.create(
+            recipient=self.assigned_doctor,
+            notification_type=Notification.NotificationType.SYSTEM,
+            title='Patient Ready for Consultation',
+            message=f'Patient {self.patient} is ready for your consultation. Visit ID: {self.visit_id}',
+            related_object_id=self.visit_id
+        )
 
 class MedicalExamination(models.Model):
     visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='examination')

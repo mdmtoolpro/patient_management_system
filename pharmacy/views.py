@@ -30,11 +30,14 @@ def pharmacy_dashboard(request):
         ready_prescriptions = Prescription.objects.filter(status=Prescription.Status.READY)
     
     active_carts = DispenseCart.objects.filter(pharmacist=request.user, is_active=True)
+
+    prescriptions = Prescription.objects.filter(status=Prescription.Status.PENDING).order_by('-created_at')
     
     context = {
         'pending_prescriptions': pending_prescriptions,
         'ready_prescriptions': ready_prescriptions,
         'active_carts': active_carts,
+        'prescriptions':prescriptions,
     }
     return render(request, 'pharmacy/dashboard.html', context)
 
@@ -79,6 +82,21 @@ def prescription_detail(request, prescription_id):
         'cart': cart,
     }
     return render(request, 'pharmacy/prescription_detail.html', context)
+
+
+@login_required
+def prescription_details(request, prescription_id):
+    """View prescription details"""
+    prescription = get_object_or_404(Prescription, prescription_id=prescription_id)
+    prescription_items = prescription.items.all()
+    
+    context = {
+        'prescription': prescription,
+        'prescription_items': prescription_items,
+        'patient': prescription.visit.patient,
+        'visit': prescription.visit,
+    }
+    return render(request, 'pharmacy/prescription_details.html', context)
     
 @login_required
 @require_http_methods(["GET"])

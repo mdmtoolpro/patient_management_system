@@ -73,23 +73,25 @@ class DispenseCart(models.Model):
         limit_choices_to={'role': User.Role.PHARMACIST},
         related_name='dispense_carts'
     )
-    prescription = models.OneToOneField(Prescription, on_delete=models.CASCADE)
+    
+    # Change from OneToOne to ForeignKey to allow multiple carts
+    prescription = models.ForeignKey(
+        Prescription, 
+        on_delete=models.CASCADE,
+        related_name='dispense_carts'
+    )
+    
     items = models.ManyToManyField(PrescriptionItem, through='CartItem')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Cart for {self.prescription.prescription_id}"
+        return f"Cart for {self.prescription.prescription_id} by {self.pharmacist}"
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['pharmacist', 'prescription'],
-                condition=models.Q(is_active=True),
-                name='unique_active_cart_per_pharmacist_prescription'
-            )
-        ]
+        # Ensure unique active cart per pharmacist and prescription
+        unique_together = ['pharmacist', 'prescription', 'is_active']
 
 class CartItem(models.Model):
     cart = models.ForeignKey(DispenseCart, on_delete=models.CASCADE)

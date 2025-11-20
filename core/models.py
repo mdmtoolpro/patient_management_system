@@ -12,12 +12,14 @@ class Notification(models.Model):
         PRESCRIPTION = 'PRESCRIPTION', _('New Prescription')
         PAYMENT = 'PAYMENT', _('Payment Required')
         SYSTEM = 'SYSTEM', _('System Notification')
+        PATIENT_ASSIGNMENT = 'PATIENT_ASSIGNMENT', _('Patient Assignment')  # New type
+        CONSULTATION_READY = 'CONSULTATION_READY', _('Consultation Ready')  # New type
     
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     notification_type = models.CharField(max_length=20, choices=NotificationType.choices)
     title = models.CharField(max_length=200)
     message = models.TextField()
-    related_object_id = models.CharField(max_length=20, blank=True)  # e.g., visit_id, lab_request_id
+    related_object_id = models.CharField(max_length=20, blank=True)
     is_read = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)
